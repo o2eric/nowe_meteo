@@ -1,0 +1,28 @@
+configuration:
+  location_name:
+    name: Nazwa lokalizacji
+    description: >-
+      Wyświetlana w panelu i nazwie sensora (np. „Warszawa”). Puste = nazwa
+      lokalizacji z Home Assistant.
+  latitude:
+    name: Szerokość geograficzna
+    description: >-
+      Puste = współrzędne domu z Home Assistant. Zasięg modelu UM: Polska
+      i okolice.
+  longitude:
+    name: Długość geograficzna
+    description: Puste = współrzędne domu z Home Assistant.
+  model:
+    name: Model prognozy
+    description: >-
+      um4_60 (60 h, zalecany), um4_120 (120 h), gfs (eksperymentalnie, 240 h).
+  update_minutes:
+    name: Odświeżanie (minuty)
+    description: >-
+      Jak często pobierać prognozę. Nowy bieg UM pojawia się co ~6 h, więc
+      30–60 min w zupełności wystarcza. Nie obciążaj serwerów ICM.
+  publish_sensor:
+    name: Publikuj sensor
+    description: >-
+      Tworzy sensor.icm_meteogram (stan = temperatura teraz, serie prognozy
+      w atrybutach — do ApexCharts i automatyzacji).

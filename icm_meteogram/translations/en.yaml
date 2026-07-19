@@ -1,0 +1,27 @@
+configuration:
+  location_name:
+    name: Location name
+    description: >-
+      Shown in the panel and sensor name. Empty = Home Assistant location name.
+  latitude:
+    name: Latitude
+    description: >-
+      Empty = your Home Assistant home coordinates. UM model covers Poland
+      and surroundings.
+  longitude:
+    name: Longitude
+    description: Empty = your Home Assistant home coordinates.
+  model:
+    name: Forecast model
+    description: >-
+      um4_60 (60 h, recommended), um4_120 (120 h), gfs (experimental, 240 h).
+  update_minutes:
+    name: Refresh interval (minutes)
+    description: >-
+      New UM runs appear every ~6 h, so 30–60 min is plenty. Please be kind
+      to ICM servers.
+  publish_sensor:
+    name: Publish sensor
+    description: >-
+      Creates sensor.icm_meteogram (state = current temperature, forecast
+      series in attributes — for ApexCharts and automations).
