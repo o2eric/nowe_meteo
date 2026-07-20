@@ -39,7 +39,8 @@ except ImportError:  # pragma: no cover
     ZoneInfo = None
 
 BASE = "https://devmgramapi.meteo.pl/meteorograms"
-GEO = "https://geocoding-api.open-meteo.com/v1/search"
+GEO_PHOTON = "https://photon.dev.meteo.pl/api"           # geokoder ICM meteo.pl
+GEO_OM = "https://geocoding-api.open-meteo.com/v1/search"  # fallback
 OPTIONS_FILE = os.environ.get("OPTIONS_FILE", "/data/options.json")
 SUPERVISOR = "http://supervisor"
 SUPERVISOR_TOKEN = (os.environ.get("SUPERVISOR_TOKEN")
@@ -135,21 +136,63 @@ def resolve_location(opts):
 
 # --------------------------------------------------------------------------- geocoding
 
+# osm_value -> polska etykieta typu miejsca
+OSM_PL = {"city": "miasto", "town": "miasto", "village": "wieś",
+          "hamlet": "przysiółek", "borough": "dzielnica", "suburb": "dzielnica",
+          "neighbourhood": "osiedle", "quarter": "osiedle",
+          "municipality": "gmina", "county": "powiat"}
+
+
 def geocode(query):
+    """Geokoder jak w apce ICM (Photon meteo.pl); fallback: Open-Meteo."""
     q = (query or "").strip()
     if len(q) < 2:
         return []
-    url = GEO + "?" + urllib.parse.urlencode(
-        {"name": q, "count": 8, "language": "pl", "format": "json"})
+    try:
+        return geocode_photon(q)
+    except Exception as e:
+        log("photon geocode blad, fallback Open-Meteo:", e)
+        return geocode_openmeteo(q)
+
+
+def geocode_photon(q):
+    params = {"q": q, "limit": 10, "osm_tag": "place"}
+    if CFG.get("lat") is not None:              # bias na biezaca lokalizacje
+        params["lat"], params["lon"] = CFG["lat"], CFG["lon"]
+    url = GEO_PHOTON + "/?" + urllib.parse.urlencode(params)
     with urllib.request.urlopen(url, timeout=15) as r:
         data = json.loads(r.read().decode())
     out = []
-    for it in data.get("results", []):
-        detail = ", ".join(x for x in (it.get("admin2"), it.get("admin1"),
-                                       it.get("country")) if x)
-        out.append({"name": it.get("name"), "detail": detail,
-                    "lat": r2(it["latitude"]), "lon": r2(it["longitude"])})
+    for f in data.get("features", []):
+        p = f.get("properties", {})
+        coords = f.get("geometry", {}).get("coordinates")
+        if not coords or len(coords) < 2:
+            continue
+        typ = OSM_PL.get(p.get("osm_value"), p.get("osm_value") or "")
+        parts = [typ] if typ else []
+        if p.get("city") and p["city"] != p.get("name"):
+            parts.append(p["city"])
+        for k in ("county", "state"):
+            if p.get(k):
+                parts.append(p[k])
+        if p.get("country") and p["country"] != "Polska":
+            parts.append(p["country"])
+        out.append({"name": p.get("name") or q,
+                    "detail": ", ".join(parts),
+                    "lat": r2(coords[1]), "lon": r2(coords[0])})
     return out
+
+
+def geocode_openmeteo(q):
+    url = GEO_OM + "?" + urllib.parse.urlencode(
+        {"name": q, "count": 8, "language": "pl", "format": "json"})
+    with urllib.request.urlopen(url, timeout=15) as r:
+        data = json.loads(r.read().decode())
+    return [{"name": it.get("name"),
+             "detail": ", ".join(x for x in (it.get("admin2"), it.get("admin1"),
+                                             it.get("country")) if x),
+             "lat": r2(it["latitude"]), "lon": r2(it["longitude"])}
+            for it in data.get("results", [])]
 
 
 # --------------------------------------------------------------------------- ICM

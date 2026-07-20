@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+- Wyszukiwarka lokalizacji korzysta teraz z **geokodera meteo.pl (Photon)** —
+  tego samego, którego używa aplikacja ICM. Wyniki obejmują tylko obszar
+  meteo.pl (koniec z „Poznań, Ohio"), są sortowane względem bieżącej
+  lokalizacji i pokazują typ miejsca (miasto/wieś) oraz powiat i województwo.
+  Fallback na Open-Meteo, gdy meteo.pl niedostępne.
+
 ## 0.2.1
 
 - Współrzędne są **ucinane** do 2 miejsc po przecinku (a nie zaokrąglane):
