@@ -25,6 +25,7 @@ Wspolrzedne sa zaokraglane do 2 miejsc po przecinku.
 import json
 import os
 import threading
+from decimal import Decimal, ROUND_DOWN
 import time
 import traceback
 import urllib.parse
@@ -59,8 +60,9 @@ def log(*a):
 
 
 def r2(v):
-    """Zaokraglij wspolrzedna do 2 miejsc po przecinku."""
-    return round(float(v), 2)
+    """Obetnij wspolrzedna do 2 miejsc po przecinku (ku zeru, bez zaokraglania).
+    21.0122 -> 21.01, 52.2296756 -> 52.22. Decimal(str(...)) unika bledow float."""
+    return float(Decimal(str(float(v))).quantize(Decimal("0.01"), rounding=ROUND_DOWN))
 
 
 # --------------------------------------------------------------------------- config

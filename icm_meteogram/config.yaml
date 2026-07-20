@@ -1,5 +1,5 @@
 name: Meteogram ICM
-version: "0.2.0"
+version: "0.2.1"
 slug: icm_meteogram
 description: >-
   Interaktywny meteogram godzinowy z modelu UM 4 km (ICM meteo.pl) — panel

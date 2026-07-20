@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Współrzędne są **ucinane** do 2 miejsc po przecinku (a nie zaokrąglane):
+  21.0122 → 21.01, 52.2296756 → 52.22.
+
 ## 0.2.0
 
 - Wyszukiwarka lokalizacji w panelu (przycisk „Zmień lokalizację") —

@@ -18,7 +18,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | Opcja | Domyślnie | Opis |
 |---|---|---|
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
-| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Zaokrąglane do 2 miejsc |
+| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 2 miejsc |
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie) |
 | `update_minutes` | `30` | Interwał odświeżania (10–180) |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
