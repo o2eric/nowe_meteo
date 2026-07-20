@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Zastrzeżenia prawne: dodano `DISCLAIMER.md` i `LICENSE` (MIT dla kodu,
+  z wyłączeniem danych), wyraźne oznaczenie **projektu jako nieoficjalnego
+  i niezależnego** (brak powiązania z ICM UW / meteo.pl) w README, dokumentacji,
+  opisie add-onu i w stopce panelu. Logo bez wordmarku „meteo.pl".
+- Dane pogodowe: © ICM UW, meteo.pl — pozostają ich własnością.
+
 ## 0.2.2
 
 - Wyszukiwarka lokalizacji korzysta teraz z **geokodera meteo.pl (Photon)** —

@@ -1,9 +1,9 @@
 name: Meteogram ICM
-version: "0.2.2"
+version: "0.2.3"
 slug: icm_meteogram
 description: >-
-  Interaktywny meteogram godzinowy z modelu UM 4 km (ICM meteo.pl) — panel
-  w bocznym menu + sensor z seriami prognozy. Nieoficjalne API, tylko polskie IP.
+  Nieoficjalny meteogram godzinowy (model UM 4 km, dane ICM UW/meteo.pl) —
+  panel + sensor. Projekt niezależny, niepowiązany z ICM UW/meteo.pl.
 url: https://github.com/o2eric/nowe_meteo
 arch:
   - aarch64

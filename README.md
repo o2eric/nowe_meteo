@@ -1,6 +1,13 @@
-# ICM Meteo — repozytorium add-onów Home Assistant
+# Meteogram (nieoficjalny) — repozytorium add-onów Home Assistant
 
 [![Add repository to my Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fo2eric%2Fnowe_meteo)
+
+> ⚠️ **Projekt nieoficjalny i niezależny.** Nie jest powiązany z ICM UW ani
+> meteo.pl, ani przez nie wspierany. Dane pogodowe są własnością **ICM UW /
+> meteo.pl** i pozostają objęte ich prawami autorskimi i regulaminem; add-on
+> korzysta z ich **nieoficjalnego API** i jedynie pobiera prognozę dla
+> lokalizacji użytkownika, na użytek osobisty. Pełne zastrzeżenia:
+> [DISCLAIMER.md](./DISCLAIMER.md). Kod: [MIT](./LICENSE) (nie obejmuje danych).
 
 ## Add-ony
 

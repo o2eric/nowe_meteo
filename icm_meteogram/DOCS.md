@@ -79,11 +79,26 @@ recorder:
 
 (Karta ApexCharts z `data_generator` czyta stan na żywo, nie historię.)
 
-## Ograniczenia i uczciwość wobec ICM
+## Ograniczenia techniczne
 
 - API jest **nieoficjalne** (backend aplikacji mobilnej Meteo ICM). Może się
   zmienić lub zniknąć bez zapowiedzi.
 - Endpoint danych odpowiada tylko z **polskich adresów IP** — spoza Polski
   dostaniesz błąd 502.
 - Trzymaj rozsądny interwał odświeżania (domyślne 30 min to i tak dużo —
-  nowy bieg modelu pojawia się co ~6 h). Dane: © ICM UW, meteo.pl.
+  nowy bieg modelu pojawia się co ~6 h).
+
+## Zastrzeżenia prawne (ważne)
+
+To **nieoficjalny, niezależny** projekt — **niepowiązany** z ICM UW ani
+meteo.pl i przez nie **niewspierany**. Prognozy są **własnością ICM UW /
+meteo.pl** (© ICM UW, meteo.pl) i pozostają objęte ich prawami autorskimi
+oraz regulaminem; add-on jedynie pobiera prognozę dla Twojej lokalizacji na
+użytek osobisty i **nie nadaje** żadnych praw do danych. Korzysta z
+**nieoficjalnego API** — używaj odpowiedzialnie, z niskim obciążeniem, do
+celów niekomercyjnych. Oprogramowanie „AS IS", bez gwarancji; nie opieraj na
+nim decyzji krytycznych. Znaki „ICM", „meteo.pl", „UM" należą do właścicieli
+i użyto ich wyłącznie opisowo.
+
+Pełny tekst: [DISCLAIMER.md](https://github.com/o2eric/nowe_meteo/blob/main/DISCLAIMER.md).
+O oficjalną zgodę na wykorzystanie prognoz ICM pytaj: **meteo@icm.edu.pl**.
