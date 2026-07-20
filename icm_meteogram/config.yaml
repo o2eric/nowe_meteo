@@ -1,9 +1,9 @@
-name: Meteogram ICM
-version: "0.2.3"
+name: Meteogram (na podstawie ICM)
+version: "0.2.4"
 slug: icm_meteogram
 description: >-
-  Nieoficjalny meteogram godzinowy (model UM 4 km, dane ICM UW/meteo.pl) —
-  panel + sensor. Projekt niezależny, niepowiązany z ICM UW/meteo.pl.
+  Nieoficjalny meteogram godzinowy na podstawie danych ICM UW/meteo.pl
+  (model UM 4 km) — panel + sensor. Projekt niezależny, niepowiązany z ICM.
 url: https://github.com/o2eric/nowe_meteo
 arch:
   - aarch64
@@ -12,7 +12,7 @@ init: false
 homeassistant_api: true
 ingress: true
 panel_icon: mdi:chart-bell-curve-cumulative
-panel_title: Meteogram ICM
+panel_title: Meteogram
 options:
   location_name: ""
   model: um4_60

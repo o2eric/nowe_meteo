@@ -1,4 +1,4 @@
-<title>Meteogram ICM</title>
+<title>Meteogram (na podstawie ICM)</title>
 <style>
   :root{
     --bg:#eef1f6; --panel:#ffffff; --panel-2:#f6f8fb;
@@ -141,8 +141,8 @@
   <div class="card">
     <div class="head">
       <div>
-        <div class="loc-eyebrow">Prognoza godzinowa &#183; model UM 4 km &#183; ICM</div>
-        <h1 class="loc"><span id="locName">Meteogram ICM</span> <small id="coords"></small></h1>
+        <div class="loc-eyebrow">Na podstawie modelu ICM UM 4 km &#183; projekt nieoficjalny</div>
+        <h1 class="loc"><span id="locName">Meteogram</span> <small id="coords"></small></h1>
         <div><button id="locBtn" class="loc-edit" type="button">&#128205; Zmie&#324; lokalizacj&#281;</button></div>
       </div>
       <div class="now-block">
@@ -205,7 +205,7 @@
   setTimeout(function(){location.reload();},30*60*1000);
 })();
 function boot(DATA){
-if(DATA.name){document.getElementById('locName').textContent=DATA.name;document.title='Meteogram ICM \u2014 '+DATA.name;}
+if(DATA.name){document.getElementById('locName').textContent=DATA.name;document.title='Meteogram \u2014 '+DATA.name;}
 const H = DATA.hourly, D = DATA.daily;
 const N = H.time.length;
 const DOW = ['niedz.','pon.','wt.','\u015br.','czw.','pt.','sob.'];

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- Nazwa i logo przeformułowane na **„na podstawie ICM"** (zamiast „Meteogram
+  ICM") — jaśniejsze, że projekt jedynie korzysta z danych ICM, a nie jest
+  produktem ICM. Wielki wordmark to teraz „Meteogram".
+
 ## 0.2.3
 
 - Zastrzeżenia prawne: dodano `DISCLAIMER.md` i `LICENSE` (MIT dla kodu,
