@@ -1,5 +1,5 @@
 name: Meteogram ICM
-version: "0.1.0"
+version: "0.2.0"
 slug: icm_meteogram
 description: >-
   Interaktywny meteogram godzinowy z modelu UM 4 km (ICM meteo.pl) — panel
@@ -18,6 +18,7 @@ options:
   model: um4_60
   update_minutes: 30
   publish_sensor: true
+  coffee_url: ""
 schema:
   location_name: str?
   latitude: float?
@@ -25,3 +26,4 @@ schema:
   model: list(um4_60|um4_120|gfs)
   update_minutes: int(10,180)
   publish_sensor: bool
+  coffee_url: str?

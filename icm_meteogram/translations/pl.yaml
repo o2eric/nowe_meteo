@@ -26,3 +26,8 @@ configuration:
     description: >-
       Tworzy sensor.icm_meteogram (stan = temperatura teraz, serie prognozy
       w atrybutach — do ApexCharts i automatyzacji).
+  coffee_url:
+    name: Link „postaw kawę"
+    description: >-
+      Opcjonalny link (np. buycoffee.to / buymeacoffee.com). Gdy ustawiony,
+      w panelu pojawia się przycisk „Postaw kawę". Puste = ukryty.

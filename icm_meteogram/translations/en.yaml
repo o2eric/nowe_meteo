@@ -25,3 +25,8 @@ configuration:
     description: >-
       Creates sensor.icm_meteogram (state = current temperature, forecast
       series in attributes — for ApexCharts and automations).
+  coffee_url:
+    name: "Buy me a coffee link"
+    description: >-
+      Optional link (e.g. buycoffee.to / buymeacoffee.com). When set, a
+      "Buy me a coffee" button appears in the panel. Empty = hidden.

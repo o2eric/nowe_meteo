@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- Wyszukiwarka lokalizacji w panelu (przycisk „Zmień lokalizację") —
+  wpisujesz nazwę, wybierasz właściwą z listy z ujednoznacznieniem
+  (powiat / województwo / kraj), bo nazwy się powtarzają. Wybór zapisuje
+  się w opcjach add-onu i od razu przelicza prognozę.
+- Współrzędne zaokrąglane do 2 miejsc po przecinku.
+- Opcja „postaw kawę" (`coffee_url`) — po ustawieniu w panelu pojawia się
+  przycisk wsparcia.
+
 ## 0.1.0
 
 - Pierwsze wydanie.

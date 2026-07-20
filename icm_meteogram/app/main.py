@@ -3,12 +3,14 @@
 
 Pobiera prognoze godzinowa z nieoficjalnego API meteogramow ICM meteo.pl
 (model UM 4 km) i wystawia:
-  GET /            -> interaktywny widget (panel ingress)
-  GET /api/data    -> JSON w formacie widgetu (hourly + daily)
-  GET /api/series  -> serie [[ts_ms, val], ...] pod ApexCharts
-  GET /api/health  -> status odswiezania
+  GET  /            -> interaktywny widget (panel ingress)
+  GET  /api/data    -> JSON w formacie widgetu (hourly + daily) + coffee/name
+  GET  /api/series  -> serie [[ts_ms, val], ...] pod ApexCharts
+  GET  /api/health  -> status odswiezania
+  GET  /api/geocode?q=... -> wyszukiwarka lokalizacji (Open-Meteo geocoding)
+  POST /api/setloc  -> ustaw lokalizacje {lat, lon, name}; zapisuje do opcji
 
-Przepis na API (za repo dzemchmielewski/homectrl):
+Przepis na API ICM (za repo dzemchmielewski/homectrl):
   1) POST https://devmgramapi.meteo.pl/meteorograms/available
        -> {"um4_60": [epoch, ...], "um4_120": [...], "gfs": [...]}
   2) POST https://devmgramapi.meteo.pl/meteorograms/<model>
@@ -16,15 +18,16 @@ Przepis na API (za repo dzemchmielewski/homectrl):
 UWAGA: endpoint danych odpowiada tylko z polskich IP (spoza PL: 502).
 
 Konfiguracja: /data/options.json (add-on) lub zmienne srodowiskowe (dev):
-  ICM_LAT, ICM_LON, ICM_NAME, ICM_MODEL, ICM_MINUTES, ICM_PORT
+  ICM_LAT, ICM_LON, ICM_NAME, ICM_MODEL, ICM_MINUTES, ICM_PORT, ICM_COFFEE
 Brak lat/lon -> wspolrzedne domu z API Home Assistant (SUPERVISOR_TOKEN).
+Wspolrzedne sa zaokraglane do 2 miejsc po przecinku.
 """
 import json
 import os
-import sys
 import threading
 import time
 import traceback
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -35,19 +38,29 @@ except ImportError:  # pragma: no cover
     ZoneInfo = None
 
 BASE = "https://devmgramapi.meteo.pl/meteorograms"
+GEO = "https://geocoding-api.open-meteo.com/v1/search"
 OPTIONS_FILE = os.environ.get("OPTIONS_FILE", "/data/options.json")
+SUPERVISOR = "http://supervisor"
 SUPERVISOR_TOKEN = (os.environ.get("SUPERVISOR_TOKEN")
                     or os.environ.get("HASSIO_TOKEN")
                     or os.environ.get("APP_TOKEN"))
-CORE_API = os.environ.get("CORE_API", "http://supervisor/core/api")
+CORE_API = os.environ.get("CORE_API", SUPERVISOR + "/core/api")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 STATE = {"embed": None, "series": None, "error": None, "updated": None}
 LOCK = threading.Lock()
+REFRESH = threading.Event()      # wybudza petle po zmianie lokalizacji
+CFG = {}                         # biezaca konfiguracja (mutowalna)
+OPTS = {}                        # pelne opcje (do zapisu przez Supervisor)
 
 
 def log(*a):
     print("[icm-meteogram]", *a, flush=True)
+
+
+def r2(v):
+    """Zaokraglij wspolrzedna do 2 miejsc po przecinku."""
+    return round(float(v), 2)
 
 
 # --------------------------------------------------------------------------- config
@@ -58,12 +71,10 @@ def load_options():
         with open(OPTIONS_FILE, encoding="utf-8") as f:
             opts = json.load(f) or {}
     env_map = {
-        "ICM_LAT": ("latitude", float),
-        "ICM_LON": ("longitude", float),
-        "ICM_NAME": ("location_name", str),
-        "ICM_MODEL": ("model", str),
-        "ICM_MINUTES": ("update_minutes", int),
-        "ICM_PORT": ("port", int),
+        "ICM_LAT": ("latitude", float), "ICM_LON": ("longitude", float),
+        "ICM_NAME": ("location_name", str), "ICM_MODEL": ("model", str),
+        "ICM_MINUTES": ("update_minutes", int), "ICM_PORT": ("port", int),
+        "ICM_COFFEE": ("coffee_url", str),
     }
     for env, (key, cast) in env_map.items():
         if os.environ.get(env):
@@ -72,6 +83,7 @@ def load_options():
     opts.setdefault("update_minutes", 30)
     opts.setdefault("location_name", "")
     opts.setdefault("publish_sensor", True)
+    opts.setdefault("coffee_url", "")
     opts.setdefault("port", 8099)
     return opts
 
@@ -82,6 +94,20 @@ def core_get(path):
         headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}"})
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read().decode())
+
+
+def persist_options():
+    """Zapisz biezace opcje do Supervisora (zmiana lat/lon przetrwa restart)."""
+    if not SUPERVISOR_TOKEN:
+        return False
+    body = {"options": {k: OPTS[k] for k in OPTS if k != "port"}}
+    req = urllib.request.Request(
+        f"{SUPERVISOR}/addons/self/options",
+        data=json.dumps(body).encode(), method="POST",
+        headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}",
+                 "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return r.status in (200, 201)
 
 
 def resolve_location(opts):
@@ -102,7 +128,26 @@ def resolve_location(opts):
         raise SystemExit(
             "Brak lokalizacji: ustaw latitude/longitude w opcjach add-onu "
             "albo skonfiguruj wspolrzedne domu w Home Assistant.")
-    return float(lat), float(lon), name, tzname
+    return r2(lat), r2(lon), name, tzname
+
+
+# --------------------------------------------------------------------------- geocoding
+
+def geocode(query):
+    q = (query or "").strip()
+    if len(q) < 2:
+        return []
+    url = GEO + "?" + urllib.parse.urlencode(
+        {"name": q, "count": 8, "language": "pl", "format": "json"})
+    with urllib.request.urlopen(url, timeout=15) as r:
+        data = json.loads(r.read().decode())
+    out = []
+    for it in data.get("results", []):
+        detail = ", ".join(x for x in (it.get("admin2"), it.get("admin1"),
+                                       it.get("country")) if x)
+        out.append({"name": it.get("name"), "detail": detail,
+                    "lat": r2(it["latitude"]), "lon": r2(it["longitude"])})
+    return out
 
 
 # --------------------------------------------------------------------------- ICM
@@ -117,7 +162,6 @@ def post(url, payload=None, timeout=40):
 
 
 def wcode(cldt, prob, prec, storm, fog):
-    """Mapowanie na kody WMO uzywane przez widget do ikon."""
     if storm >= 0.5:
         return 95
     if fog >= 0.5:
@@ -138,7 +182,6 @@ def fetch_icm(lat, lon, model, tzname, name):
     date = avail[model][-1]
     resp = post(f"{BASE}/{model}", {"date": date, "point": {"lat": lat, "lon": lon}})
     data = resp["data"]
-
     meta = data["airtmp_point"]
     n = len(meta["data"])
 
@@ -166,7 +209,6 @@ def fetch_icm(lat, lon, model, tzname, name):
     fog = g("fog_max")
     codes = [wcode(cldt[i], prob[i], prec[i], storm[i], fog[i]) for i in range(n)]
 
-    # agregacja dobowa (kalendarz lokalny)
     days = {}
     for i, t in enumerate(times):
         days.setdefault(t[:10], []).append(i)
@@ -183,8 +225,8 @@ def fetch_icm(lat, lon, model, tzname, name):
     point = meta.get("point", {})
     now_iso = datetime.now(tz).isoformat(timespec="seconds")
     embed = {
-        "lat": lat, "lon": lon, "name": name,
-        "model": f"UM 4 km · ICM" if model.startswith("um4") else model.upper(),
+        "lat": r2(lat), "lon": r2(lon), "name": name,
+        "model": "UM 4 km · ICM" if model.startswith("um4") else model.upper(),
         "node": f"{point.get('row', '?')}/{point.get('col', '?')}",
         "tz": tzname, "fstart": resp.get("fstart"), "updated": now_iso,
         "hourly": {
@@ -210,6 +252,39 @@ def fetch_icm(lat, lon, model, tzname, name):
     return embed, series
 
 
+def do_fetch():
+    """Pobierz dla biezacej lokalizacji z CFG i zapisz do STATE."""
+    embed, series = fetch_icm(CFG["lat"], CFG["lon"], CFG["model"],
+                              CFG["tzname"], CFG["name"])
+    with LOCK:
+        STATE.update(embed=embed, series=series, error=None,
+                     updated=embed["updated"])
+    log(f"odswiezono: {CFG['name'] or 'lokalizacja'} {CFG['lat']},{CFG['lon']} "
+        f"bieg {embed['fstart']}, {len(embed['hourly']['time'])} h, "
+        f"wezel {embed['node']}")
+    if CFG.get("publish_sensor"):
+        try:
+            push_sensor(embed, series)
+        except Exception as e:
+            log("blad publikacji sensora:", e)
+    return embed
+
+
+def set_location(lat, lon, name):
+    """Ustaw nowa lokalizacje: zaokraglij, pobierz od razu, zapisz opcje."""
+    lat, lon, name = r2(lat), r2(lon), (name or "").strip()
+    CFG["lat"], CFG["lon"], CFG["name"] = lat, lon, name
+    OPTS["latitude"], OPTS["longitude"], OPTS["location_name"] = lat, lon, name
+    embed = do_fetch()                      # natychmiastowy efekt
+    persisted = False
+    try:
+        persisted = persist_options()       # przetrwa restart + widoczne w UI HA
+    except Exception as e:
+        log("nie zapisano opcji (dziala tymczasowo):", e)
+    REFRESH.set()                           # zresetuj timer petli
+    return embed, persisted
+
+
 # --------------------------------------------------------------------------- HA sensor
 
 def push_sensor(embed, series):
@@ -224,6 +299,7 @@ def push_sensor(embed, series):
             "icon": "mdi:chart-bell-curve-cumulative",
             "attribution": "Dane: ICM UW, meteo.pl (nieoficjalne API)",
             "model": embed["model"], "node": embed["node"],
+            "latitude": embed["lat"], "longitude": embed["lon"],
             "fstart": embed.get("fstart"), "updated": embed.get("updated"),
             "forecast_hours": len(h["time"]),
             "temp": series["temp"], "apparent": series["apparent"],
@@ -242,28 +318,18 @@ def push_sensor(embed, series):
 
 # --------------------------------------------------------------------------- loop + http
 
-def refresher(lat, lon, name, tzname, opts):
-    minutes = max(10, int(opts["update_minutes"]))
+def refresher():
     while True:
         try:
-            embed, series = fetch_icm(lat, lon, opts["model"], tzname, name)
-            with LOCK:
-                STATE.update(embed=embed, series=series, error=None,
-                             updated=embed["updated"])
-            log(f"odswiezono: bieg {embed['fstart']}, "
-                f"{len(embed['hourly']['time'])} h, wezel {embed['node']}")
-            if opts.get("publish_sensor"):
-                try:
-                    push_sensor(embed, series)
-                except Exception as e:
-                    log("blad publikacji sensora:", e)
-            time.sleep(minutes * 60)
+            do_fetch()
         except Exception as e:
             with LOCK:
                 STATE["error"] = str(e)
             log("blad odswiezania:", e)
             traceback.print_exc()
-            time.sleep(300)
+        # spij do nastepnego cyklu, ale wybudz sie po zmianie lokalizacji
+        REFRESH.wait(timeout=max(10, int(CFG["minutes"])) * 60)
+        REFRESH.clear()
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -278,15 +344,22 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def do_GET(self):
-        path = self.path.split("?")[0].rstrip("/") or "/"
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path.rstrip("/") or "/"
         if path in ("/", "/index.html"):
             with open(os.path.join(APP_DIR, "widget.html"), "rb") as f:
                 return self._send(200, f.read(), "text/html; charset=utf-8")
+        if path == "/api/geocode":
+            q = urllib.parse.parse_qs(parsed.query).get("q", [""])[0]
+            try:
+                return self._send(200, {"results": geocode(q)})
+            except Exception as e:
+                return self._send(502, {"error": str(e)})
         with LOCK:
             embed, series, err = STATE["embed"], STATE["series"], STATE["error"]
         if path == "/api/data":
             if embed:
-                return self._send(200, embed)
+                return self._send(200, {**embed, "coffee": CFG.get("coffee_url", "")})
             return self._send(503, {"error": err or "jeszcze brak danych"})
         if path == "/api/series":
             if series:
@@ -297,20 +370,43 @@ class Handler(BaseHTTPRequestHandler):
                                     "updated": STATE["updated"]})
         return self._send(404, {"error": "not found"})
 
-    def log_message(self, fmt, *args):  # cichy access-log
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path.rstrip("/") or "/"
+        if path != "/api/setloc":
+            return self._send(404, {"error": "not found"})
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length) or b"{}")
+            lat, lon = float(body["lat"]), float(body["lon"])
+        except Exception as e:
+            return self._send(400, {"error": f"zle dane: {e}"})
+        try:
+            embed, persisted = set_location(lat, lon, body.get("name", ""))
+            return self._send(200, {"ok": True, "persisted": persisted,
+                                    "lat": embed["lat"], "lon": embed["lon"],
+                                    "name": embed["name"], "node": embed["node"]})
+        except Exception as e:
+            log("setloc blad:", e)
+            traceback.print_exc()
+            return self._send(502, {"error": str(e)})
+
+    def log_message(self, fmt, *args):
         pass
 
 
 def main():
-    log("token API:", "jest" if SUPERVISOR_TOKEN else "BRAK",
-        "| env:", sorted(k for k in os.environ if "TOKEN" in k.upper()))
-    opts = load_options()
-    lat, lon, name, tzname = resolve_location(opts)
-    log(f"start: {name or 'lokalizacja'} {lat},{lon} model={opts['model']} "
-        f"co {opts['update_minutes']} min, port {opts['port']}")
-    threading.Thread(target=refresher, args=(lat, lon, name, tzname, opts),
-                     daemon=True).start()
-    ThreadingHTTPServer(("0.0.0.0", int(opts["port"])), Handler).serve_forever()
+    log("token API:", "jest" if SUPERVISOR_TOKEN else "BRAK")
+    OPTS.update(load_options())
+    lat, lon, name, tzname = resolve_location(OPTS)
+    CFG.update(lat=lat, lon=lon, name=name, tzname=tzname,
+               model=OPTS["model"], minutes=OPTS["update_minutes"],
+               publish_sensor=OPTS.get("publish_sensor", True),
+               coffee_url=OPTS.get("coffee_url", ""))
+    log(f"start: {name or 'lokalizacja'} {lat},{lon} model={CFG['model']} "
+        f"co {CFG['minutes']} min, port {OPTS['port']}")
+    threading.Thread(target=refresher, daemon=True).start()
+    ThreadingHTTPServer(("0.0.0.0", int(OPTS["port"])), Handler).serve_forever()
 
 
 if __name__ == "__main__":

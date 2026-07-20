@@ -103,6 +103,38 @@
     .now-block{margin-left:0;width:100%} .now-temp{font-size:44px} .plot{height:260px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  .loc-edit{margin-top:8px;appearance:none;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;
+    cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .loc-edit:hover{color:var(--ink);border-color:var(--accent)}
+  .modal-bg{position:fixed;inset:0;background:rgba(6,10,16,.55);display:none;align-items:flex-start;
+    justify-content:center;z-index:50;padding:11vh 16px 16px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+    width:100%;max-width:440px;overflow:hidden}
+  .modal h2{margin:0;padding:16px 18px 10px;font-size:15px}
+  .msearch{width:calc(100% - 36px);margin:0 18px 10px;padding:10px 12px;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:inherit;font-size:14px}
+  .msearch:focus{outline:2px solid var(--accent);outline-offset:0}
+  .results{list-style:none;margin:0;padding:0 8px 8px;max-height:46vh;overflow-y:auto}
+  .results li{padding:9px 12px;border-radius:9px;cursor:pointer;display:flex;justify-content:space-between;
+    gap:10px;align-items:center}
+  .results li:hover{background:var(--panel-2)}
+  .results .rn{font-weight:600;font-size:13.5px}
+  .results .rd{font-size:11.5px;color:var(--muted)}
+  .results .rc{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mfoot{padding:6px 18px 14px;font-size:11.5px;color:var(--faint);display:flex;
+    justify-content:space-between;align-items:center}
+  .mfoot button{appearance:none;border:0;background:none;color:var(--muted);font:inherit;
+    cursor:pointer;font-weight:600}
+  .coffee{margin-left:auto;text-decoration:none;color:#1a1a1a;background:#ffdd00;border-radius:999px;
+    padding:6px 13px;font-size:12px;font-weight:700;display:none;align-items:center;gap:6px}
+  .coffee.show{display:inline-flex}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);
+    color:var(--panel);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;
+    transition:opacity .2s;pointer-events:none;z-index:60}
+  .toast.show{opacity:1}
 </style>
 
 <div class="wrap">
@@ -111,6 +143,7 @@
       <div>
         <div class="loc-eyebrow">Prognoza godzinowa &#183; model UM 4 km &#183; ICM</div>
         <h1 class="loc"><span id="locName">Meteogram ICM</span> <small id="coords"></small></h1>
+        <div><button id="locBtn" class="loc-edit" type="button">&#128205; Zmie&#324; lokalizacj&#281;</button></div>
       </div>
       <div class="now-block">
         <svg class="now-ico" id="nowIco" viewBox="0 0 48 48" aria-hidden="true"></svg>
@@ -145,11 +178,18 @@
     <div class="foot">
       <span class="tag" id="stampTag">migawka danych</span>
       <span>&#377;r&#243;d&#322;o: ICM meteo.pl &#183; devmgramapi (POST) &#183; darmowe, bez klucza &#183; <b id="footCoords"></b></span>
-      <span style="color:var(--faint)">Add-on Home Assistant &#183; od&#347;wie&#380;a si&#281; automatycznie</span>
+      <span style="color:var(--faint)">Add-on Home Assistant &#183; od&#347;wie&#380;a si&#281; automatycznie</span><a class="coffee" id="coffeeBtn" target="_blank" rel="noopener">&#9749; Postaw kaw&#281;</a>
     </div>
   </div>
 </div>
 
+<div class="modal-bg" id="locModal"><div class="modal" role="dialog" aria-modal="true" aria-label="Zmie&#324; lokalizacj&#281;">
+  <h2>Zmie&#324; lokalizacj&#281;</h2>
+  <input class="msearch" id="locSearch" type="text" autocomplete="off" placeholder="Szukaj miejscowo&#347;ci (np. Pozna&#324;)...">
+  <ul class="results" id="locResults"></ul>
+  <div class="mfoot"><span>Geokodowanie: Open-Meteo</span><button type="button" id="locClose">Zamknij</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
 <script>
 (function(){
   function fail(msg){
@@ -464,5 +504,53 @@ function buildHead(){
 buildHead(); buildDays(); setMode('all');
 // start scrolled to "now"
 requestAnimationFrame(()=>{ scroll.scrollLeft=Math.max(0,xAt(nowIdx)-scroll.clientWidth*0.32); });
+
+// --- przycisk kawy ---
+if(DATA.coffee){var _cb=document.getElementById('coffeeBtn');_cb.href=DATA.coffee;_cb.classList.add('show');}
+// --- wyszukiwarka lokalizacji ---
+(function(){
+  var modal=document.getElementById('locModal'),inp=document.getElementById('locSearch'),
+      res=document.getElementById('locResults'),toast=document.getElementById('toast'),tmr;
+  function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':s);return d.innerHTML;}
+  function note(t){res.innerHTML='<li style="padding:10px 12px;color:var(--muted)">'+t+'</li>';}
+  function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(function(){toast.classList.remove('show');},2600);}
+  function open(){modal.classList.add('open');inp.value='';res.innerHTML='';setTimeout(function(){inp.focus();},50);}
+  function close(){modal.classList.remove('open');}
+  document.getElementById('locBtn').addEventListener('click',open);
+  document.getElementById('locClose').addEventListener('click',close);
+  modal.addEventListener('click',function(e){if(e.target===modal)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  inp.addEventListener('input',function(){clearTimeout(tmr);var q=inp.value.trim();
+    if(q.length<2){res.innerHTML='';return;}
+    tmr=setTimeout(function(){
+      fetch('api/geocode?q='+encodeURIComponent(q),{cache:'no-store'})
+        .then(function(r){return r.json();})
+        .then(function(d){render(d.results||[]);})
+        .catch(function(){note('B\u0142\u0105d wyszukiwania');});
+    },350);
+  });
+  function render(items){
+    res.innerHTML='';
+    if(!items.length){note('Brak wynik\u00f3w');return;}
+    items.forEach(function(it){
+      var li=document.createElement('li');
+      li.innerHTML='<span><span class="rn">'+esc(it.name)+'</span><br>'
+        +'<span class="rd">'+esc(it.detail||'')+'</span></span>'
+        +'<span class="rc">'+it.lat.toFixed(2)+', '+it.lon.toFixed(2)+'</span>';
+      li.addEventListener('click',function(){pick(it);});
+      res.appendChild(li);
+    });
+  }
+  function pick(it){
+    note('Pobieram prognoz\u0119 dla '+esc(it.name)+'...');
+    fetch('api/setloc',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lat:it.lat,lon:it.lon,name:it.name})})
+      .then(function(r){return r.json().then(function(b){if(!r.ok)throw new Error(b.error||r.status);return b;});})
+      .then(function(b){close();showToast('Ustawiono: '+(b.name||(b.lat+', '+b.lon)));
+        setTimeout(function(){location.reload();},700);})
+      .catch(function(e){note('Nie uda\u0142o si\u0119: '+esc(e.message));});
+  }
+})();
+
 }
 </script>

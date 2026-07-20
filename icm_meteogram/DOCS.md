@@ -18,10 +18,20 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | Opcja | Domyślnie | Opis |
 |---|---|---|
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
-| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z Home Assistant |
+| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Zaokrąglane do 2 miejsc |
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie) |
 | `update_minutes` | `30` | Interwał odświeżania (10–180) |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
+| `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
+
+## Zmiana lokalizacji
+
+Najszybciej: w panelu kliknij **„Zmień lokalizację"**, wpisz nazwę
+miejscowości i wybierz właściwą z listy (pokazuje powiat / województwo /
+kraj, bo nazwy się powtarzają). Wybór zapisuje się w opcjach add-onu
+i od razu przelicza prognozę. Możesz też wpisać `latitude`/`longitude`
+ręcznie w Konfiguracji, albo zostawić puste, by użyć współrzędnych domu
+z Home Assistant.
 
 ## Endpointy (dla zaawansowanych)
 
