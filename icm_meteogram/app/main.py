@@ -249,6 +249,7 @@ def fetch_icm(lat, lon, model, tzname, name):
     wspd = [round(v, 1) for v in g("wind10_sd_true_prev_point", 3.6)]
     wgst = [round(v, 1) for v in g("wind_gust_max", 3.6)]
     wdir = [int(round(v)) % 360 for v in g("wind10_dr_deg_true_prev_point")]
+    humid = [max(0, min(100, int(round(v)))) for v in g("realhum_aver")]
     cldt = g("cldtot_aver", default=0.5)
     storm = g("storm_max")
     fog = g("fog_max")
@@ -278,7 +279,8 @@ def fetch_icm(lat, lon, model, tzname, name):
             "time": times, "temperature_2m": temp, "apparent_temperature": app,
             "precipitation": prec, "precipitation_probability": prob,
             "weather_code": codes, "wind_speed_10m": wspd,
-            "wind_gusts_10m": wgst, "wind_direction_10m": wdir},
+            "wind_gusts_10m": wgst, "wind_direction_10m": wdir,
+            "relative_humidity_2m": humid},
         "daily": {
             "time": dtime, "weather_code": dcode,
             "temperature_2m_max": dmax, "temperature_2m_min": dmin},
@@ -293,6 +295,7 @@ def fetch_icm(lat, lon, model, tzname, name):
         "wind": [[tsm[i], wspd[i]] for i in range(n)],
         "gust": [[tsm[i], wgst[i]] for i in range(n)],
         "dir": [[tsm[i], wdir[i]] for i in range(n)],
+        "humid": [[tsm[i], humid[i]] for i in range(n)],
     }
     return embed, series
 
@@ -350,6 +353,7 @@ def push_sensor(embed, series):
             "temp": series["temp"], "apparent": series["apparent"],
             "prob": series["prob"], "precip": series["precip"],
             "wind": series["wind"], "gust": series["gust"], "dir": series["dir"],
+            "humid": series["humid"],
         },
     }
     req = urllib.request.Request(

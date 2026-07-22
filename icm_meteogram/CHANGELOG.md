@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.1
+
+- **Strzałki kierunku wiatru w domyślnym widoku „Wszystko"** — wcześniej były
+  tylko w zakładce „Wiatr", więc na starcie kierunku nie było widać. Teraz
+  pojawiają się co 3 h nad linią wiatru także w widoku zbiorczym.
+
+## 0.3.0
+
+- **Wilgotność względna** (%) — nowe pole prognozy (`realhum_aver` z modelu ICM).
+  Widoczna w dymku wykresu (zakładki Temperatura / Szansa opadów / Wszystko)
+  oraz w nagłówku przy podsumowaniu „teraz". Dodana też do atrybutów
+  `sensor.icm_meteogram` (seria `humid`) — do wykresów ApexCharts i automatyzacji.
+- **Kierunek wiatru** czytelniejszy: dymek i nagłówek pokazują teraz zarówno
+  różę (np. `NE`), jak i stopnie (`45°`). Strzałki kierunku w zakładce „Wiatr"
+  bez zmian.
+
 ## 0.2.4
 
 - Nazwa i logo przeformułowane na **„na podstawie ICM"** (zamiast „Meteogram
