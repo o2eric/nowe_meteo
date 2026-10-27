@@ -7,20 +7,26 @@ Pobiera prognoze godzinowa z nieoficjalnego API meteogramow ICM meteo.pl
   GET  /api/data    -> JSON w formacie widgetu (hourly + daily) + coffee/name
   GET  /api/series  -> serie [[ts_ms, val], ...] pod ApexCharts
   GET  /api/health  -> status odswiezania
-  GET  /api/geocode?q=... -> wyszukiwarka lokalizacji (Open-Meteo geocoding)
+  GET  /api/geocode?q=... -> wyszukiwarka lokalizacji (geokoder meteo.pl)
   POST /api/setloc  -> ustaw lokalizacje {lat, lon, name}; zapisuje do opcji
 
-Przepis na API ICM (za repo dzemchmielewski/homectrl):
-  1) POST https://devmgramapi.meteo.pl/meteorograms/available
+Przepis na API ICM (jak frontend www.meteo.pl/meteogramy, stan 2026-10):
+  0) POST <api>/available_models/  body: {"lat": .., "lon": ..}
+       -> {"available_models": ["um4", "gfs"]}  (brak "um4" = punkt poza UM)
+  1) GET  <api>/meteorograms/available
        -> {"um4_60": [epoch, ...], "um4_120": [...], "gfs": [...]}
-  2) POST https://devmgramapi.meteo.pl/meteorograms/<model>
+          (rosnaco: ostatni element = najnowszy bieg)
+  2) POST <api>/meteorograms/<model>
        body: {"date": <ostatni epoch>, "point": {"lat": .., "lon": ..}}
+<api> = opcja api_base (domyslnie https://devmgramapi.meteo.pl - z tego
+samego hosta korzysta produkcyjna strona meteo.pl).
 UWAGA: endpoint danych odpowiada tylko z polskich IP (spoza PL: 502).
 
 Konfiguracja: /data/options.json (add-on) lub zmienne srodowiskowe (dev):
-  ICM_LAT, ICM_LON, ICM_NAME, ICM_MODEL, ICM_MINUTES, ICM_PORT, ICM_COFFEE
+  ICM_LAT, ICM_LON, ICM_NAME, ICM_MODEL, ICM_MINUTES, ICM_PORT, ICM_COFFEE,
+  ICM_API
 Brak lat/lon -> wspolrzedne domu z API Home Assistant (SUPERVISOR_TOKEN).
-Wspolrzedne sa zaokraglane do 2 miejsc po przecinku.
+Wspolrzedne sa ucinane do 4 miejsc po przecinku (tyle zwraca serwer ICM).
 """
 import json
 import os
@@ -38,9 +44,11 @@ try:
 except ImportError:  # pragma: no cover
     ZoneInfo = None
 
-BASE = "https://devmgramapi.meteo.pl/meteorograms"
-GEO_PHOTON = "https://photon.dev.meteo.pl/api"           # geokoder ICM meteo.pl
-GEO_OM = "https://geocoding-api.open-meteo.com/v1/search"  # fallback
+DEFAULT_API = "https://devmgramapi.meteo.pl"
+GEO_NOM = "https://nom-proxy.dev.meteo.pl/geo"           # geokoder www.meteo.pl
+GEO_PHOTON = "https://photon.dev.meteo.pl/api"           # starszy geokoder ICM
+GEO_OM = "https://geocoding-api.open-meteo.com/v1/search"  # ostatni fallback
+MISSING = -1e6        # ICM oznacza brak wartosci jako -327276480.0
 OPTIONS_FILE = os.environ.get("OPTIONS_FILE", "/data/options.json")
 SUPERVISOR = "http://supervisor"
 SUPERVISOR_TOKEN = (os.environ.get("SUPERVISOR_TOKEN")
@@ -61,9 +69,10 @@ def log(*a):
 
 
 def r2(v):
-    """Obetnij wspolrzedna do 2 miejsc po przecinku (ku zeru, bez zaokraglania).
-    21.0122 -> 21.01, 52.2296756 -> 52.22. Decimal(str(...)) unika bledow float."""
-    return float(Decimal(str(float(v))).quantize(Decimal("0.01"), rounding=ROUND_DOWN))
+    """Obetnij wspolrzedna do 4 miejsc po przecinku (ku zeru, bez zaokraglania)
+    - tak samo dokladnie jak punkt zwracany przez API ICM (~10 m).
+    21.01229 -> 21.0122, 52.2296756 -> 52.2296. Decimal(str(...)) unika bledow float."""
+    return float(Decimal(str(float(v))).quantize(Decimal("0.0001"), rounding=ROUND_DOWN))
 
 
 # --------------------------------------------------------------------------- config
@@ -77,7 +86,7 @@ def load_options():
         "ICM_LAT": ("latitude", float), "ICM_LON": ("longitude", float),
         "ICM_NAME": ("location_name", str), "ICM_MODEL": ("model", str),
         "ICM_MINUTES": ("update_minutes", int), "ICM_PORT": ("port", int),
-        "ICM_COFFEE": ("coffee_url", str),
+        "ICM_COFFEE": ("coffee_url", str), "ICM_API": ("api_base", str),
     }
     for env, (key, cast) in env_map.items():
         if os.environ.get(env):
@@ -88,6 +97,8 @@ def load_options():
     opts.setdefault("publish_sensor", True)
     opts.setdefault("coffee_url", "")
     opts.setdefault("port", 8099)
+    opts["api_base"] = ((opts.get("api_base") or "").strip().rstrip("/")
+                        or DEFAULT_API)
     return opts
 
 
@@ -144,15 +155,55 @@ OSM_PL = {"city": "miasto", "town": "miasto", "village": "wieś",
 
 
 def geocode(query):
-    """Geokoder jak w apce ICM (Photon meteo.pl); fallback: Open-Meteo."""
+    """Geokoder jak na www.meteo.pl (Nominatim proxy); potem Photon ICM,
+    na koncu Open-Meteo."""
     q = (query or "").strip()
     if len(q) < 2:
         return []
-    try:
-        return geocode_photon(q)
-    except Exception as e:
-        log("photon geocode blad, fallback Open-Meteo:", e)
-        return geocode_openmeteo(q)
+    for fn in (geocode_nominatim, geocode_photon):
+        try:
+            res = fn(q)
+            if res:
+                return res
+        except Exception as e:
+            log(f"{fn.__name__} blad, probuje dalej:", e)
+    return geocode_openmeteo(q)
+
+
+NOM_HEADERS = {"Accept-Language": "pl-PL, pl", "User-Agent": "icm-meteogram-ha"}
+
+
+def geocode_nominatim(q):
+    params = {"q": q, "format": "json", "addressdetails": 1, "polygon_svg": 0,
+              "various_place": "city", "limit": 8}
+    url = GEO_NOM + "/search.php?" + urllib.parse.urlencode(params)
+    data = get_json(url, NOM_HEADERS, timeout=15)
+    out = []
+    for it in data or []:
+        a = it.get("address") or {}
+        name = (a.get("city") or a.get("town") or a.get("village")
+                or a.get("hamlet") or (it.get("display_name") or q).split(",")[0])
+        typ = OSM_PL.get(it.get("type"), it.get("type") or "")
+        parts = [typ] if typ else []
+        for k in ("county", "state"):
+            if a.get(k):
+                parts.append(a[k])
+        if a.get("country") and a.get("country_code") != "pl":
+            parts.append(a["country"])
+        out.append({"name": name, "detail": ", ".join(parts),
+                    "lat": r2(it["lat"]), "lon": r2(it["lon"])})
+    return out
+
+
+def reverse_name(lat, lon):
+    """Nazwa miejscowosci dla wspolrzednych (jak getCityByLocation na meteo.pl)."""
+    url = GEO_NOM + "/reverse.php?" + urllib.parse.urlencode(
+        {"lat": lat, "lon": lon, "lang": "pl", "format": "json"})
+    a = (get_json(url, NOM_HEADERS, timeout=15) or {}).get("address") or {}
+    for k in ("city", "village", "town", "hamlet", "county", "state"):
+        if a.get(k):
+            return a[k]
+    return ""
 
 
 def geocode_photon(q):
@@ -206,13 +257,19 @@ def post(url, payload=None, timeout=40):
         return json.loads(r.read().decode())
 
 
-def wcode(cldt, prob, prec, storm, fog):
+def get_json(url, headers=None, timeout=40):
+    req = urllib.request.Request(url, headers=headers or {})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def wcode(cldt, prob, prec, storm, fog, temp):
     if storm >= 0.5:
         return 95
     if fog >= 0.5:
         return 45
     if prob >= 40 and prec > 0.05:
-        return 61
+        return 71 if temp < 0 else 61      # jak meteo.pl: opad przy t<0 = snieg
     if cldt >= 0.8:
         return 3
     if cldt >= 0.4:
@@ -220,12 +277,40 @@ def wcode(cldt, prob, prec, storm, fog):
     return 0
 
 
-def fetch_icm(lat, lon, model, tzname, name):
-    avail = post(f"{BASE}/available")
+def pick_model(api, lat, lon, model):
+    """Sprawdz /available_models/ - poza obszarem UM zostaje tylko GFS."""
+    try:
+        models = post(f"{api}/available_models/",
+                      {"lat": lat, "lon": lon}, timeout=20).get("available_models")
+    except Exception as e:
+        log("available_models niedostepne, zostaje", model, "-", e)
+        return model
+    if not models:
+        return model
+    if model.startswith("um4") and "um4" not in models and "gfs" in models:
+        log(f"punkt {lat},{lon} poza obszarem UM ({models}) -> gfs")
+        return "gfs"
+    return model
+
+
+def fetch_available(api):
+    """Lista biegow: GET jak frontend meteo.pl, fallback POST (stary sposob)."""
+    try:
+        return get_json(f"{api}/meteorograms/available")
+    except Exception as e:
+        log("GET /available blad, probuje POST:", e)
+        return post(f"{api}/meteorograms/available")
+
+
+def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
+    requested = model
+    model = pick_model(api, lat, lon, model)
+    avail = fetch_available(api)
     if model not in avail or not avail[model]:
         raise RuntimeError(f"model {model} niedostepny w /available: {list(avail)}")
-    date = avail[model][-1]
-    resp = post(f"{BASE}/{model}", {"date": date, "point": {"lat": lat, "lon": lon}})
+    date = max(avail[model])                 # najnowszy bieg (lista rosnaca)
+    resp = post(f"{api}/meteorograms/{model}",
+                {"date": date, "point": {"lat": lat, "lon": lon}})
     data = resp["data"]
     meta = data["airtmp_point"]
     n = len(meta["data"])
@@ -234,7 +319,17 @@ def fetch_icm(lat, lon, model, tzname, name):
         node = data.get(field)
         if not node or "data" not in node:
             return [default] * n
-        return [v * scale for v in node["data"]]
+        return [default if (v is None or v < MISSING) else v * scale
+                for v in node["data"]]
+
+    def opt(field, scale=1.0, nd=1):
+        """Pole opcjonalne: None gdy brak w odpowiedzi (np. GFS) lub brak danych."""
+        node = data.get(field)
+        if not node or "data" not in node:
+            return [None] * n
+        return [None if (v is None or v < MISSING)
+                else (int(round(v * scale)) if nd == 0 else round(v * scale, nd))
+                for v in node["data"]]
 
     first = int(meta["first_timestamp"])
     interval = int(meta["interval"])
@@ -253,12 +348,20 @@ def fetch_icm(lat, lon, model, tzname, name):
     cldt = g("cldtot_aver", default=0.5)
     storm = g("storm_max")
     fog = g("fog_max")
-    codes = [wcode(cldt[i], prob[i], prec[i], storm[i], fog[i]) for i in range(n)]
+    codes = [wcode(cldt[i], prob[i], prec[i], storm[i], fog[i], temp[i])
+             for i in range(n)]
+    # nowe w 0.4.0 (jednostki API: Pa, Celsius, kg/m2 = mm, m, ulamek 0-1)
+    press = opt("slpres_point", 0.01)          # cisnienie zredukowane, hPa
+    dew = opt("dwptmp_point")                  # punkt rosy, C
+    pmax = opt("pcpttl_max", 1.0, 2)           # opad maks. w oczku, mm/h
+    vis = opt("visibl_min", 1.0, 0)            # widzialnosc min., m
+    cloud = opt("cldtot_aver", 100, 0)         # zachmurzenie ogolne, %
+    grdmin = opt("grdtmp_min")                 # temp. gruntu min (przymrozki)
 
     days = {}
     for i, t in enumerate(times):
         days.setdefault(t[:10], []).append(i)
-    sev = {95: 5, 61: 4, 45: 3, 3: 2, 2: 1, 0: 0}
+    sev = {95: 5, 71: 4, 61: 4, 45: 3, 3: 2, 2: 1, 0: 0}
     dtime, dmax, dmin, dcode = [], [], [], []
     for day in sorted(days):
         idx = days[day]
@@ -273,6 +376,7 @@ def fetch_icm(lat, lon, model, tzname, name):
     embed = {
         "lat": r2(lat), "lon": r2(lon), "name": name,
         "model": "UM 4 km · ICM" if model.startswith("um4") else model.upper(),
+        "model_id": model, "model_requested": requested,
         "node": f"{point.get('row', '?')}/{point.get('col', '?')}",
         "tz": tzname, "fstart": resp.get("fstart"), "updated": now_iso,
         "hourly": {
@@ -280,7 +384,10 @@ def fetch_icm(lat, lon, model, tzname, name):
             "precipitation": prec, "precipitation_probability": prob,
             "weather_code": codes, "wind_speed_10m": wspd,
             "wind_gusts_10m": wgst, "wind_direction_10m": wdir,
-            "relative_humidity_2m": humid},
+            "relative_humidity_2m": humid, "pressure_msl": press,
+            "dew_point_2m": dew, "precipitation_max": pmax,
+            "visibility": vis, "cloud_cover": cloud,
+            "soil_temperature_min": grdmin},
         "daily": {
             "time": dtime, "weather_code": dcode,
             "temperature_2m_max": dmax, "temperature_2m_min": dmin},
@@ -296,6 +403,12 @@ def fetch_icm(lat, lon, model, tzname, name):
         "gust": [[tsm[i], wgst[i]] for i in range(n)],
         "dir": [[tsm[i], wdir[i]] for i in range(n)],
         "humid": [[tsm[i], humid[i]] for i in range(n)],
+        "pressure": [[tsm[i], press[i]] for i in range(n)],
+        "dew": [[tsm[i], dew[i]] for i in range(n)],
+        "precip_max": [[tsm[i], pmax[i]] for i in range(n)],
+        "visibility": [[tsm[i], vis[i]] for i in range(n)],
+        "cloud": [[tsm[i], cloud[i]] for i in range(n)],
+        "ground_min": [[tsm[i], grdmin[i]] for i in range(n)],
     }
     return embed, series
 
@@ -303,7 +416,7 @@ def fetch_icm(lat, lon, model, tzname, name):
 def do_fetch():
     """Pobierz dla biezacej lokalizacji z CFG i zapisz do STATE."""
     embed, series = fetch_icm(CFG["lat"], CFG["lon"], CFG["model"],
-                              CFG["tzname"], CFG["name"])
+                              CFG["tzname"], CFG["name"], CFG["api"])
     with LOCK:
         STATE.update(embed=embed, series=series, error=None,
                      updated=embed["updated"])
@@ -354,6 +467,14 @@ def push_sensor(embed, series):
             "prob": series["prob"], "precip": series["precip"],
             "wind": series["wind"], "gust": series["gust"], "dir": series["dir"],
             "humid": series["humid"],
+            "pressure": series["pressure"], "dew": series["dew"],
+            # biezace wartosci (bez serii - atrybuty musza zmiescic sie
+            # w limicie 16 KB recordera HA)
+            "pressure_now": h["pressure_msl"][0],
+            "dew_point_now": h["dew_point_2m"][0],
+            "visibility_now": h["visibility"][0],
+            "cloud_cover_now": h["cloud_cover"][0],
+            "model_id": embed.get("model_id"),
         },
     }
     req = urllib.request.Request(
@@ -451,9 +572,15 @@ def main():
     CFG.update(lat=lat, lon=lon, name=name, tzname=tzname,
                model=OPTS["model"], minutes=OPTS["update_minutes"],
                publish_sensor=OPTS.get("publish_sensor", True),
-               coffee_url=OPTS.get("coffee_url", ""))
-    log(f"start: {name or 'lokalizacja'} {lat},{lon} model={CFG['model']} "
-        f"co {CFG['minutes']} min, port {OPTS['port']}")
+               coffee_url=OPTS.get("coffee_url", ""), api=OPTS["api_base"])
+    if not CFG["name"]:
+        try:
+            CFG["name"] = reverse_name(lat, lon)
+            log("nazwa z geokodera:", CFG["name"])
+        except Exception as e:
+            log("reverse geocode blad:", e)
+    log(f"start: {CFG['name'] or 'lokalizacja'} {lat},{lon} model={CFG['model']} "
+        f"co {CFG['minutes']} min, port {OPTS['port']}, api {CFG['api']}")
     threading.Thread(target=refresher, daemon=True).start()
     ThreadingHTTPServer(("0.0.0.0", int(OPTS["port"])), Handler).serve_forever()
 

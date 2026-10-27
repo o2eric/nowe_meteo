@@ -10,19 +10,22 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
    pasek dni, znacznik „teraz", motyw jasny/ciemny.
 2. **Sensor `sensor.icm_meteogram`** — stan = aktualna temperatura, a w
    atrybutach pełne serie prognozy (`temp`, `apparent`, `prob`, `precip`,
-   `wind`, `gust`, `dir`) jako pary `[timestamp_ms, wartość]` — gotowe pod
-   kartę ApexCharts i automatyzacje.
+   `wind`, `gust`, `dir`, `humid`, `pressure` [hPa], `dew` [punkt rosy °C])
+   jako pary `[timestamp_ms, wartość]` — gotowe pod kartę ApexCharts
+   i automatyzacje — oraz bieżące wartości `pressure_now`, `dew_point_now`,
+   `visibility_now` [m], `cloud_cover_now` [%].
 
 ## Konfiguracja
 
 | Opcja | Domyślnie | Opis |
 |---|---|---|
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
-| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 2 miejsc |
-| `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie) |
+| `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 4 miejsc |
+| `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Poza obszarem UM add-on sam przechodzi na `gfs` |
 | `update_minutes` | `30` | Interwał odświeżania (10–180) |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
+| `api_base` | *(puste)* | Adres API ICM; puste = `https://devmgramapi.meteo.pl` |
 
 ## Zmiana lokalizacji
 
@@ -39,7 +42,8 @@ Pod portem ingress (lub po wystawieniu portu 8099):
 
 - `GET /` — panel,
 - `GET /api/data` — JSON `hourly` + `daily` (format zbliżony do Open-Meteo),
-- `GET /api/series` — serie `[[ts_ms, val], ...]` pod ApexCharts,
+- `GET /api/series` — serie `[[ts_ms, val], ...]` pod ApexCharts (także
+  `precip_max`, `visibility`, `cloud`, `ground_min`, których nie ma w sensorze),
 - `GET /api/health` — status ostatniego odświeżenia.
 
 ## Przykład karty ApexCharts (dane z sensora)

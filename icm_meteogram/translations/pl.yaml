@@ -31,3 +31,9 @@ configuration:
     description: >-
       Opcjonalny link (np. buycoffee.to / buymeacoffee.com). Gdy ustawiony,
       w panelu pojawia się przycisk „Postaw kawę". Puste = ukryty.
+  api_base:
+    name: Adres API (zaawansowane)
+    description: >-
+      Host API meteogramów ICM. Puste = https://devmgramapi.meteo.pl (ten sam,
+      z którego korzysta strona www.meteo.pl). Zmieniaj tylko, gdy ICM
+      przeniesie API pod inny adres.

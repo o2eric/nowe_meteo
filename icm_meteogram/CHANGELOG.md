@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.0
+
+Dostosowanie do aktualnego frontendu www.meteo.pl/meteogramy (2026-10):
+
+- **Lista biegów pobierana przez GET** (`/meteorograms/available`), tak jak robi
+  to strona; stary POST zostaje jako zapas.
+- **Sprawdzanie zasięgu modelu** (`/available_models/`): dla punktu poza
+  obszarem UM 4 km add-on sam przechodzi na GFS zamiast zgłaszać błąd.
+- **Nowy geokoder** — ten sam co na www.meteo.pl (`nom-proxy.dev.meteo.pl`,
+  format Nominatim); Photon ICM i Open-Meteo zostają jako zapas. Gdy nazwa
+  lokalizacji jest pusta, add-on ustala ją ze współrzędnych.
+- **Śnieg**: opad przy temperaturze poniżej 0°C dostaje kod/ikonę śniegu
+  (wcześniej zawsze „deszcz").
+- **Nowe pola prognozy**: ciśnienie zredukowane do poziomu morza (hPa), punkt
+  rosy, opad maksymalny w oczku siatki, widzialność, zachmurzenie ogólne (%),
+  minimalna temperatura gruntu (przymrozki). W `/api/data` i `/api/series`;
+  w sensorze serie `pressure` i `dew` oraz bieżące wartości `*_now`.
+- Wartości „brak danych" z API ICM (`-327276480`) są odfiltrowywane.
+- Opcja **`api_base`** — adres API do zmiany bez nowego wydania.
+- Współrzędne ucinane do **4** miejsc po przecinku (wcześniej 2), tak jak
+  zwraca je serwer ICM — przy 2 miejscach punkt mógł się przesunąć nawet
+  o ~1 km i trafić w sąsiednie oczko siatki 4 km.
+
 ## 0.3.1
 
 - **Strzałki kierunku wiatru w domyślnym widoku „Wszystko"** — wcześniej były

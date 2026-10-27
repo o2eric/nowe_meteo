@@ -30,3 +30,8 @@ configuration:
     description: >-
       Optional link (e.g. buycoffee.to / buymeacoffee.com). When set, a
       "Buy me a coffee" button appears in the panel. Empty = hidden.
+  api_base:
+    name: API base URL (advanced)
+    description: >-
+      ICM meteogram API host. Empty = https://devmgramapi.meteo.pl (the same
+      host the www.meteo.pl website uses). Change only if ICM moves the API.
