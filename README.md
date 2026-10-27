@@ -31,5 +31,11 @@ z polskich adresów IP.
 ## Licencja / dane
 
 Dane pogodowe: © ICM UW, [meteo.pl](https://www.meteo.pl) (nieoficjalne API).
-Add-on nie jest powiązany z ICM UW. Szanuj serwery źródła — domyślny
-interwał odświeżania (30 min) jest w zupełności wystarczający.
+Add-on nie jest powiązany z ICM UW. Szanuj serwery źródła — domyślnie
+add-on pobiera prognozę **co 360 min (6 h)**, a w panelu jest przycisk
+**„⟳ Odśwież”** do pobrania od razu.
+
+**Dlaczego tak rzadko?** Model UM 4 km liczy nowy bieg co 6 h (00, 06, 12,
+18 UTC; `um4_120` tylko co 12 h). Częstsze pobieranie zwraca te same dane,
+a niepotrzebnie obciąża nieoficjalne API ICM. Stan sensorów i tak przelicza
+się co pełną godzinę z danych w pamięci, więc „teraz” zawsze jest aktualne.

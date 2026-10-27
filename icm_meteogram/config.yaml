@@ -1,5 +1,5 @@
 name: Meteogram (na podstawie ICM)
-version: "0.6.0"
+version: "0.6.1"
 slug: icm_meteogram
 description: >-
   Nieoficjalny meteogram godzinowy na podstawie danych ICM UW/meteo.pl
@@ -16,7 +16,7 @@ panel_title: Meteogram
 options:
   location_name: ""
   model: um4_60
-  update_minutes: 30
+  update_minutes: 360
   publish_sensor: true
   publish_detail_sensors: true
   coffee_url: ""

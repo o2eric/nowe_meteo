@@ -97,7 +97,7 @@ def load_options():
         if os.environ.get(env):
             opts[key] = cast(os.environ[env])
     opts.setdefault("model", "um4_60")
-    opts.setdefault("update_minutes", 30)
+    opts.setdefault("update_minutes", 360)
     opts.setdefault("location_name", "")
     opts.setdefault("publish_sensor", True)
     opts.setdefault("coffee_url", "")

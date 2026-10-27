@@ -22,7 +22,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
 | `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 4 miejsc |
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Poza obszarem UM add-on sam przechodzi na `gfs` |
-| `update_minutes` | `30` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
+| `update_minutes` | `360` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
 | `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
@@ -108,8 +108,11 @@ recorder:
   zmienić lub zniknąć bez zapowiedzi.
 - Endpoint danych odpowiada tylko z **polskich adresów IP** — spoza Polski
   dostaniesz błąd 502.
-- Trzymaj rozsądny interwał odświeżania (domyślne 30 min to i tak dużo —
-  nowy bieg modelu pojawia się co ~6 h).
+- Trzymaj rzadki interwał pobierania. Domyślne 360 min (6 h) wynika z cyklu
+  modelu: UM liczy nowy bieg co 6 h (`um4_120` co 12 h), więc częstsze
+  zapytania zwracają te same dane i tylko obciążają nieoficjalne API ICM.
+  Stan sensorów przelicza się co pełną godzinę bez zapytań do ICM, a gdy
+  potrzebujesz świeżych danych od razu, użyj przycisku **„⟳ Odśwież”**.
 
 ## Zastrzeżenia prawne (ważne)
 

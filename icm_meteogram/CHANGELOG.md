@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1
+
+- **Domyślny interwał pobierania: 360 min (6 h)** zamiast 30 min — zgodnie z
+  cyklem modelu UM (nowy bieg co 6 h, `um4_120` co 12 h). Częstsze pobieranie
+  zwracało te same dane. Świeże dane od razu: przycisk „⟳ Odśwież”.
+  Istniejące instalacje zachowują swoją wartość `update_minutes`.
+- README, dokumentacja i opis opcji wyjaśniają, dlaczego interwał jest długi.
+
 ## 0.6.0
 
 - **Przycisk „⟳ Odśwież” w panelu** — pobiera prognozę od razu i jest
