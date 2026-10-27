@@ -19,8 +19,10 @@ configuration:
   update_minutes:
     name: Odświeżanie (minuty)
     description: >-
-      Jak często pobierać prognozę. Nowy bieg UM pojawia się co ~6 h, więc
-      30–60 min w zupełności wystarcza. Nie obciążaj serwerów ICM.
+      Jak często pobierać prognozę (10–720 min). Nowy bieg UM pojawia się
+      co 6 h (um4_120: co 12 h), więc 30–360 min w zupełności wystarcza.
+      Stan sensorów i tak przelicza się co pełną godzinę, a w panelu jest
+      przycisk „Odśwież” do pobrania od razu. Nie obciążaj serwerów ICM.
   publish_sensor:
     name: Publikuj sensor
     description: >-

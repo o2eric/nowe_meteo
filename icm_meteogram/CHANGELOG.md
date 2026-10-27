@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.0
+
+- **Przycisk „⟳ Odśwież” w panelu** — pobiera prognozę od razu i jest
+  przy okazji testem łączności z API ICM (cała ścieżka: zasięg modelu →
+  lista biegów → dane punktu). Przy problemie pokazuje komunikat, który
+  odróżnia brak sieci/DNS, odrzucenie przez API (np. HTTP 502 spoza Polski)
+  i nieczytelne dane. Limit: jedno pobranie na 60 s. Endpoint
+  `POST /api/refresh`.
+- **Dłuższy cykl pobierania**: `update_minutes` do 720 min (np. 360 = co 6 h,
+  zgodnie z biegami UM).
+- **Sensory przeliczane co pełną godzinę** z danych w pamięci (bez zapytań do
+  ICM), więc przy długim cyklu stan „teraz” się nie rozjeżdża.
+- Ręczne odświeżenie i zmiana lokalizacji nie powodują już podwójnego
+  pobrania (pętla zaczyna nowy cykl od tej chwili).
+
 ## 0.5.0
 
 - **Wszystkie wartości publikowane przez ICM**: dodane pozostałe pola

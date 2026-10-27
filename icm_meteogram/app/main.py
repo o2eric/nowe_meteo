@@ -9,6 +9,7 @@ Pobiera prognoze godzinowa z nieoficjalnego API meteogramow ICM meteo.pl
   GET  /api/health  -> status odswiezania
   GET  /api/geocode?q=... -> wyszukiwarka lokalizacji (geokoder meteo.pl)
   POST /api/setloc  -> ustaw lokalizacje {lat, lon, name}; zapisuje do opcji
+  POST /api/refresh -> reczne odswiezenie = test lacznosci z API ICM
 
 Przepis na API ICM (jak frontend www.meteo.pl/meteogramy, stan 2026-10):
   0) POST <api>/available_models/  body: {"lat": .., "lon": ..}
@@ -34,6 +35,8 @@ import threading
 from decimal import Decimal, ROUND_DOWN
 import time
 import traceback
+import socket
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
@@ -59,7 +62,9 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 
 STATE = {"embed": None, "series": None, "error": None, "updated": None}
 LOCK = threading.Lock()
-REFRESH = threading.Event()      # wybudza petle po zmianie lokalizacji
+REFRESH = threading.Event()      # wybudza petle po zmianie lokalizacji / recznym odswiezeniu
+MANUAL = {"last": 0.0, "result": None}   # reczne odswiezenie (limit 1 / 60 s)
+MANUAL_MIN_GAP = 60
 CFG = {}                         # biezaca konfiguracja (mutowalna)
 OPTS = {}                        # pelne opcje (do zapisu przez Supervisor)
 
@@ -597,18 +602,82 @@ def push_detail_sensors(embed, i):
 
 # --------------------------------------------------------------------------- loop + http
 
-def refresher():
-    while True:
+def republish():
+    """Przelicz "teraz" sensorow z danych w pamieci (bez zapytania do ICM)."""
+    with LOCK:
+        embed, series = STATE["embed"], STATE["series"]
+    if embed and CFG.get("publish_sensor"):
         try:
-            do_fetch()
+            push_sensor(embed, series)
         except Exception as e:
-            with LOCK:
-                STATE["error"] = str(e)
-            log("blad odswiezania:", e)
-            traceback.print_exc()
-        # spij do nastepnego cyklu, ale wybudz sie po zmianie lokalizacji
-        REFRESH.wait(timeout=max(10, int(CFG["minutes"])) * 60)
-        REFRESH.clear()
+            log("blad publikacji sensora:", e)
+
+
+def refresher():
+    """Pobiera prognoze co update_minutes, a co pelna godzine przelicza stan
+    sensorow, zeby "teraz" nie rozjezdzalo sie przy dlugim cyklu (np. 6 h).
+    Reczne odswiezenie / zmiana lokalizacji wybudza petle i resetuje cykl."""
+    next_fetch = 0.0
+    while True:
+        now = time.time()
+        if now >= next_fetch:
+            try:
+                do_fetch()
+            except Exception as e:
+                with LOCK:
+                    STATE["error"] = str(e)
+                log("blad odswiezania:", e)
+                traceback.print_exc()
+            next_fetch = time.time() + max(10, int(CFG["minutes"])) * 60
+        else:
+            republish()
+        next_hour = (int(time.time() // 3600) + 1) * 3600 + 30
+        timeout = max(5.0, min(next_fetch, next_hour) - time.time())
+        if REFRESH.wait(timeout=timeout):        # pobrano recznie przed chwila
+            REFRESH.clear()
+            next_fetch = time.time() + max(10, int(CFG["minutes"])) * 60
+
+
+def describe_error(e):
+    """Czytelny komunikat dla panelu: lacznosc vs. odpowiedz API vs. dane."""
+    if isinstance(e, urllib.error.HTTPError):
+        if e.code in (403, 502, 503, 504):
+            return ("api", f"API ICM odrzuciło zapytanie (HTTP {e.code}). API odpowiada "
+                           "tylko z polskich adresów IP albo serwer ma przerwę.")
+        return ("api", f"API ICM zwróciło błąd HTTP {e.code}.")
+    if isinstance(e, (urllib.error.URLError, socket.timeout, TimeoutError,
+                      ConnectionError, OSError)):
+        reason = getattr(e, "reason", e)
+        return ("network", f"Brak łączności z API ICM ({urllib.parse.urlparse(CFG.get('api') or DEFAULT_API).hostname}): {reason}. "
+                           "Sprawdź połączenie internetowe Home Assistant i DNS.")
+    return ("data", f"API ICM odpowiedziało, ale danych nie udało się odczytać: {e}")
+
+
+def manual_refresh():
+    """Reczne odswiezenie = test lacznosci z API ICM (pelna sciezka:
+    available_models -> available -> dane punktu)."""
+    now = time.time()
+    if now - MANUAL["last"] < MANUAL_MIN_GAP and MANUAL["result"]:
+        res = dict(MANUAL["result"])
+        res["cached"] = True
+        res["retry_in"] = int(MANUAL_MIN_GAP - (now - MANUAL["last"]))
+        return res
+    t0 = time.time()
+    try:
+        embed = do_fetch()
+        res = {"ok": True, "fstart": embed.get("fstart"), "model": embed.get("model_id"),
+               "node": embed.get("node"), "hours": len(embed["hourly"]["time"]),
+               "took_ms": int((time.time() - t0) * 1000)}
+        REFRESH.set()                       # nowy cykl liczony od teraz
+    except Exception as e:
+        kind, msg = describe_error(e)
+        with LOCK:
+            STATE["error"] = msg
+        log("reczne odswiezenie - blad:", kind, e)
+        res = {"ok": False, "kind": kind, "error": msg,
+               "took_ms": int((time.time() - t0) * 1000)}
+    MANUAL["last"], MANUAL["result"] = now, res
+    return res
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -652,6 +721,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
+        if path == "/api/refresh":
+            res = manual_refresh()
+            return self._send(200 if res.get("ok") else 502, res)
         if path != "/api/setloc":
             return self._send(404, {"error": "not found"})
         try:

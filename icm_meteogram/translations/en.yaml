@@ -18,8 +18,9 @@ configuration:
   update_minutes:
     name: Refresh interval (minutes)
     description: >-
-      New UM runs appear every ~6 h, so 30–60 min is plenty. Please be kind
-      to ICM servers.
+      10–720 min. New UM runs appear every 6 h (um4_120: 12 h), so 30–360
+      min is plenty. Sensor state is still recalculated every full hour and
+      the panel has a "Refresh" button. Please be kind to ICM servers.
   publish_sensor:
     name: Publish sensor
     description: >-

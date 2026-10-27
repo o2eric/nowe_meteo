@@ -22,7 +22,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
 | `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 4 miejsc |
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Poza obszarem UM add-on sam przechodzi na `gfs` |
-| `update_minutes` | `30` | Interwał odświeżania (10–180) |
+| `update_minutes` | `30` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
 | `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
@@ -45,7 +45,10 @@ Pod portem ingress (lub po wystawieniu portu 8099):
 - `GET /api/data` — JSON `hourly` + `daily` (format zbliżony do Open-Meteo),
 - `GET /api/series` — serie `[[ts_ms, val], ...]` pod ApexCharts (także
   `precip_max`, `visibility`, `cloud`, `ground_min`, których nie ma w sensorze),
-- `GET /api/health` — status ostatniego odświeżenia.
+- `GET /api/health` — status ostatniego odświeżenia,
+- `POST /api/refresh` — pobierz prognozę teraz; działa też jako test łączności
+  z API ICM (odpowiedź `{"ok": true, ...}` albo HTTP 502 z opisem problemu).
+  Limit: jedno pobranie na 60 s.
 
 ## Sensory szczegółowe (`sensor.icm_*`)
 

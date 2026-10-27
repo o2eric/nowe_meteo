@@ -135,6 +135,8 @@
     color:var(--panel);padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;
     transition:opacity .2s;pointer-events:none;z-index:60}
   .toast.show{opacity:1}
+  .toast.err{background:#b42318;color:#fff;white-space:normal;max-width:min(560px,92vw);text-align:center}
+  .loc-edit[disabled]{opacity:.6;cursor:progress}
 </style>
 
 <div class="wrap">
@@ -143,7 +145,8 @@
       <div>
         <div class="loc-eyebrow">Na podstawie modelu ICM UM 4 km &#183; projekt nieoficjalny</div>
         <h1 class="loc"><span id="locName">Meteogram</span> <small id="coords"></small></h1>
-        <div><button id="locBtn" class="loc-edit" type="button">&#128205; Zmie&#324; lokalizacj&#281;</button></div>
+        <div><button id="locBtn" class="loc-edit" type="button">&#128205; Zmie&#324; lokalizacj&#281;</button>
+          <button id="refreshBtn" class="loc-edit" type="button" title="Pobierz prognoz&#281; teraz i sprawd&#378; po&#322;&#261;czenie z API ICM">&#10227; Od&#347;wie&#380;</button></div>
       </div>
       <div class="now-block">
         <svg class="now-ico" id="nowIco" viewBox="0 0 48 48" aria-hidden="true"></svg>
@@ -517,6 +520,37 @@ requestAnimationFrame(()=>{ scroll.scrollLeft=Math.max(0,xAt(nowIdx)-scroll.clie
 
 // --- przycisk kawy ---
 if(DATA.coffee){var _cb=document.getElementById('coffeeBtn');_cb.href=DATA.coffee;_cb.classList.add('show');}
+// --- reczne odswiezenie = test lacznosci z API ICM ---
+(function(){
+  var btn=document.getElementById('refreshBtn'),toast=document.getElementById('toast'),label=btn.innerHTML;
+  function say(t,err,ms){toast.textContent=t;toast.classList.toggle('err',!!err);toast.classList.add('show');
+    clearTimeout(say._t);say._t=setTimeout(function(){toast.classList.remove('show');},ms||3000);}
+  btn.addEventListener('click',function(){
+    btn.disabled=true;btn.textContent='\u27f3 Sprawdzam po\u0142\u0105czenie\u2026';
+    var ctl=('AbortController' in window)?new AbortController():null,
+        to=setTimeout(function(){if(ctl)ctl.abort();},60000);
+    fetch('api/refresh',{method:'POST',cache:'no-store',signal:ctl?ctl.signal:undefined})
+      .then(function(r){return r.json().catch(function(){return {ok:false,kind:'addon',
+        error:'Add-on nie odpowiada poprawnie (HTTP '+r.status+').'};});})
+      .then(function(b){
+        if(b.ok){
+          var run=b.fstart?new Date(b.fstart):null,
+              hh=run?String(run.getUTCHours()).padStart(2,'0')+' UTC':'?';
+          say(b.cached?('Od\u015bwie\u017cono przed chwil\u0105 \u2014 nast\u0119pna pr\u00f3ba za '+b.retry_in+' s')
+                      :('Po\u0142\u0105czenie z API ICM OK \u00b7 bieg '+hh+' \u00b7 '+b.took_ms+' ms'),false,2200);
+          if(!b.cached)setTimeout(function(){location.reload();},1600);
+          else{btn.disabled=false;btn.innerHTML=label;}
+        }else{
+          say('Problem z \u0142\u0105czno\u015bci\u0105: '+(b.error||'nieznany b\u0142\u0105d'),true,9000);
+          btn.disabled=false;btn.innerHTML=label;
+        }})
+      .catch(function(e){
+        say(e&&e.name==='AbortError'?'Problem z \u0142\u0105czno\u015bci\u0105: API ICM nie odpowiedzia\u0142o w ci\u0105gu 60 s.'
+          :'Problem z \u0142\u0105czno\u015bci\u0105: brak odpowiedzi add-onu ('+(e&&e.message||e)+').',true,9000);
+        btn.disabled=false;btn.innerHTML=label;})
+      .then(function(){clearTimeout(to);});
+  });
+})();
 // --- wyszukiwarka lokalizacji ---
 (function(){
   var modal=document.getElementById('locModal'),inp=document.getElementById('locSearch'),
