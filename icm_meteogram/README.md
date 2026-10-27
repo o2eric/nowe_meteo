@@ -14,3 +14,5 @@ w bocznym menu + `sensor.icm_meteogram` z seriami prognozy.
 > [DISCLAIMER.md](../DISCLAIMER.md).
 
 Szczegóły: zakładka **Dokumentacja** add-onu.
+
+Wsparcie projektu: [postaw kawę ☕](https://buycoffee.to/o2eric).

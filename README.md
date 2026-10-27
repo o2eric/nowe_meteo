@@ -28,6 +28,12 @@ z polskich adresów IP.
 2. Zainstaluj **Meteogram ICM**, uzupełnij opcje (lub zostaw puste = dom z HA).
 3. Uruchom — panel „Meteogram ICM" pojawi się w bocznym menu.
 
+## Wsparcie
+
+Add-on jest darmowy i niekomercyjny. Jeśli Ci się przydaje, możesz
+[postawić mi kawę ☕](https://buycoffee.to/o2eric). Przycisk „Postaw kawę” jest też w panelu
+add-onu (opcja `coffee_url`; wyczyść ją, żeby go ukryć).
+
 ## Licencja / dane
 
 Dane pogodowe: © ICM UW, [meteo.pl](https://www.meteo.pl) (nieoficjalne API).

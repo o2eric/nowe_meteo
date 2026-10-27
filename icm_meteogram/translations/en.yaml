@@ -36,8 +36,9 @@ configuration:
   coffee_url:
     name: "Buy me a coffee link"
     description: >-
-      Optional link (e.g. buycoffee.to / buymeacoffee.com). When set, a
-      "Buy me a coffee" button appears in the panel. Empty = hidden.
+      Link of the "Buy me a coffee" button in the panel. Defaults to
+      supporting the add-on author (buycoffee.to/o2eric). Clear it to hide
+      the button.
   api_base:
     name: API base URL (advanced)
     description: >-

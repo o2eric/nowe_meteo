@@ -24,7 +24,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Poza obszarem UM add-on sam przechodzi na `gfs` |
 | `update_minutes` | `360` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
-| `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
+| `coffee_url` | `https://buycoffee.to/o2eric` | Link przycisku „Postaw kawę” w panelu (wsparcie autora); pusty = przycisk ukryty |
 | `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
 | `api_base` | *(puste)* | Adres API ICM; puste = `https://devmgramapi.meteo.pl` |
 

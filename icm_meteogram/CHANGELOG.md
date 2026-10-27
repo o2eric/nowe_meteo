@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.2
+
+- Link wsparcia autora: [buycoffee.to/o2eric](https://buycoffee.to/o2eric) — w README, na GitHubie
+  (przycisk „Sponsor”) i jako domyślna wartość `coffee_url` (przycisk
+  „Postaw kawę” w panelu). Istniejące instalacje zachowują swoją wartość;
+  pusty `coffee_url` ukrywa przycisk.
+
 ## 0.6.1
 
 - **Domyślny interwał pobierania: 360 min (6 h)** zamiast 30 min — zgodnie z

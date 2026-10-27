@@ -38,8 +38,8 @@ configuration:
   coffee_url:
     name: Link „postaw kawę"
     description: >-
-      Opcjonalny link (np. buycoffee.to / buymeacoffee.com). Gdy ustawiony,
-      w panelu pojawia się przycisk „Postaw kawę". Puste = ukryty.
+      Link przycisku „Postaw kawę” w panelu — domyślnie wsparcie autora
+      add-onu (buycoffee.to/o2eric). Wyczyść pole, żeby ukryć przycisk.
   api_base:
     name: Adres API (zaawansowane)
     description: >-

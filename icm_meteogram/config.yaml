@@ -1,5 +1,5 @@
 name: Meteogram (na podstawie ICM)
-version: "0.6.1"
+version: "0.6.2"
 slug: icm_meteogram
 description: >-
   Nieoficjalny meteogram godzinowy na podstawie danych ICM UW/meteo.pl
@@ -19,7 +19,7 @@ options:
   update_minutes: 360
   publish_sensor: true
   publish_detail_sensors: true
-  coffee_url: ""
+  coffee_url: "https://buycoffee.to/o2eric"
   api_base: ""
 schema:
   location_name: str?

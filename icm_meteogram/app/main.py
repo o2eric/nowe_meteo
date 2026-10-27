@@ -100,7 +100,7 @@ def load_options():
     opts.setdefault("update_minutes", 360)
     opts.setdefault("location_name", "")
     opts.setdefault("publish_sensor", True)
-    opts.setdefault("coffee_url", "")
+    opts.setdefault("coffee_url", "https://buycoffee.to/o2eric")
     opts.setdefault("publish_detail_sensors", True)
     opts.setdefault("port", 8099)
     opts["api_base"] = ((opts.get("api_base") or "").strip().rstrip("/")
