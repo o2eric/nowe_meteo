@@ -1,5 +1,5 @@
 name: Meteogram (na podstawie ICM)
-version: "0.4.1"
+version: "0.4.2"
 slug: icm_meteogram
 description: >-
   Nieoficjalny meteogram godzinowy na podstawie danych ICM UW/meteo.pl

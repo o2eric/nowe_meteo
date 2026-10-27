@@ -498,7 +498,7 @@ function buildDays(){
 }
 
 // ---- header now summary ----
-const fmtDeg=v=>v.toFixed(2).replace('.',',');
+const fmtDeg=v=>v.toFixed(4).replace('.',',');
 function buildHead(){
   document.getElementById('coords').textContent=`\u00b7 ${fmtDeg(DATA.lat)} N ${fmtDeg(DATA.lon)} E \u00b7 ${DATA.model}`;
   const [cat,label]=wmo(H.weather_code[nowIdx]);
@@ -546,7 +546,7 @@ if(DATA.coffee){var _cb=document.getElementById('coffeeBtn');_cb.href=DATA.coffe
       var li=document.createElement('li');
       li.innerHTML='<span><span class="rn">'+esc(it.name)+'</span><br>'
         +'<span class="rd">'+esc(it.detail||'')+'</span></span>'
-        +'<span class="rc">'+it.lat.toFixed(2)+', '+it.lon.toFixed(2)+'</span>';
+        +'<span class="rc">'+it.lat.toFixed(4)+', '+it.lon.toFixed(4)+'</span>';
       li.addEventListener('click',function(){pick(it);});
       res.appendChild(li);
     });

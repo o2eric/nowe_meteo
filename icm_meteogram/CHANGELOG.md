@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.2
+
+- Panel i lista wyników wyszukiwarki pokazują współrzędne z dokładnością
+  do **4** miejsc po przecinku (tyle, ile add-on faktycznie używa),
+  zamiast zaokrąglenia do 2.
+
 ## 0.4.1
 
 - **Stan `sensor.icm_meteogram` i wartości `*_now` dotyczą bieżącej godziny**,
