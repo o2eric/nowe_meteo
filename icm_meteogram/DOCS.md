@@ -25,6 +25,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `update_minutes` | `30` | Interwał odświeżania (10–180) |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `coffee_url` | *(puste)* | Link „postaw kawę" (buycoffee.to itp.); pusty = ukryty |
+| `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
 | `api_base` | *(puste)* | Adres API ICM; puste = `https://devmgramapi.meteo.pl` |
 
 ## Zmiana lokalizacji
@@ -45,6 +46,21 @@ Pod portem ingress (lub po wystawieniu portu 8099):
 - `GET /api/series` — serie `[[ts_ms, val], ...]` pod ApexCharts (także
   `precip_max`, `visibility`, `cloud`, `ground_min`, których nie ma w sensorze),
 - `GET /api/health` — status ostatniego odświeżenia.
+
+## Sensory szczegółowe (`sensor.icm_*`)
+
+Wartość dla bieżącej godziny prognozy (atrybut `now_time`), odświeżana razem
+z prognozą. Encje: `temperatura`, `temp_max`, `temp_min`, `temp_odczuwalna`,
+`punkt_rosy`, `temp_gruntu_min`, `temp_gruntu_max`, `wilgotnosc`,
+`cisnienie` (poziom morza), `cisnienie_stacji`, `opad`, `opad_max`,
+`szansa_opadu`, `typ_opadu` (surowy kod ICM), `wiatr`, `porywy`,
+`kierunek_wiatru`, `zachmurzenie`, `chmury_bardzo_niskie`, `chmury_niskie`,
+`chmury_srednie`, `chmury_wysokie`, `podstawa_chmur`, `wierzcholek_chmur`,
+`widzialnosc`, `mgla`, `burza`, `wyladowania`, `kod_pogody`.
+Dla GFS część pól nie istnieje — te sensory mają stan `unknown`.
+Encje są tworzone przez API stanów, więc nie mają `unique_id` (nie da się
+ich edytować w UI) i po restarcie HA pojawiają się przy pierwszym
+odświeżeniu add-onu.
 
 ## Przykład karty ApexCharts (dane z sensora)
 

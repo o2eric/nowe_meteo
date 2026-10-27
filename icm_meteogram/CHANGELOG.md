@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.0
+
+- **Wszystkie wartości publikowane przez ICM**: dodane pozostałe pola
+  odpowiedzi API — temperatura powietrza i odczuwalna min/max w godzinie,
+  temperatura gruntu max, ciśnienie na poziomie stacji, piętra chmur
+  (bardzo niskie/niskie/średnie/wysokie), podstawa chmur (pokrycie 1/25/45/
+  65/79%), wierzchołek chmur, mgła, burza, wyładowania i typ opadu (surowy
+  kod ICM). Pełne serie w `/api/data` i `/api/series`.
+- **Sensory szczegółowe `sensor.icm_*`** (29 encji, opcja
+  `publish_detail_sensors`, domyślnie włączona): wartość dla bieżącej
+  godziny z jednostką i `device_class`, więc HA zapisuje historię i rysuje
+  wykresy. Główny `sensor.icm_meteogram` bez zmian.
+
 ## 0.4.2
 
 - Panel i lista wyników wyszukiwarki pokazują współrzędne z dokładnością

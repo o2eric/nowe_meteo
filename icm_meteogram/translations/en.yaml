@@ -25,6 +25,12 @@ configuration:
     description: >-
       Creates sensor.icm_meteogram (state = current temperature, forecast
       series in attributes — for ApexCharts and automations).
+  publish_detail_sensors:
+    name: Detail sensors
+    description: >-
+      One sensor.icm_* entity per ICM value for the current hour (pressure,
+      dew point, cloud layers, cloud base, fog, storm, ...) with HA history.
+      Requires "Publish sensor".
   coffee_url:
     name: "Buy me a coffee link"
     description: >-

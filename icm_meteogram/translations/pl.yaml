@@ -26,6 +26,12 @@ configuration:
     description: >-
       Tworzy sensor.icm_meteogram (stan = temperatura teraz, serie prognozy
       w atrybutach — do ApexCharts i automatyzacji).
+  publish_detail_sensors:
+    name: Sensory szczegółowe
+    description: >-
+      Osobny sensor sensor.icm_* na każdą wartość ICM dla bieżącej godziny
+      (ciśnienie, punkt rosy, piętra chmur, podstawa chmur, mgła, burza itd.)
+      — z historią i wykresami w HA. Wymaga włączonego „Publikuj sensor".
   coffee_url:
     name: Link „postaw kawę"
     description: >-

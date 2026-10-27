@@ -96,6 +96,7 @@ def load_options():
     opts.setdefault("location_name", "")
     opts.setdefault("publish_sensor", True)
     opts.setdefault("coffee_url", "")
+    opts.setdefault("publish_detail_sensors", True)
     opts.setdefault("port", 8099)
     opts["api_base"] = ((opts.get("api_base") or "").strip().rstrip("/")
                         or DEFAULT_API)
@@ -357,6 +358,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
     vis = opt("visibl_min", 1.0, 0)            # widzialnosc min., m
     cloud = opt("cldtot_aver", 100, 0)         # zachmurzenie ogolne, %
     grdmin = opt("grdtmp_min")                 # temp. gruntu min (przymrozki)
+    extra = {k: opt(f, sc, nd) for k, f, sc, nd in EXTRA_FIELDS}
 
     days = {}
     for i, t in enumerate(times):
@@ -387,7 +389,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
             "relative_humidity_2m": humid, "pressure_msl": press,
             "dew_point_2m": dew, "precipitation_max": pmax,
             "visibility": vis, "cloud_cover": cloud,
-            "soil_temperature_min": grdmin},
+            "soil_temperature_min": grdmin, **extra},
         "daily": {
             "time": dtime, "weather_code": dcode,
             "temperature_2m_max": dmax, "temperature_2m_min": dmin},
@@ -409,6 +411,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
         "visibility": [[tsm[i], vis[i]] for i in range(n)],
         "cloud": [[tsm[i], cloud[i]] for i in range(n)],
         "ground_min": [[tsm[i], grdmin[i]] for i in range(n)],
+        **{k: [[tsm[i], v[i]] for i in range(n)] for k, v in extra.items()},
     }
     return embed, series
 
@@ -447,6 +450,67 @@ def set_location(lat, lon, name):
 
 
 # --------------------------------------------------------------------------- HA sensor
+
+# Pozostale pola odpowiedzi ICM (0.5.0): klucz, pole API, mnoznik, miejsca.
+# Jednostki API: C, Pa, ulamek 0-1, km. Brak pola (np. GFS) lub brak danych
+# (-327276480) -> None.
+EXTRA_FIELDS = [
+    ("temp_max", "airtmp_max", 1, 1),            # temp. powietrza max w godzinie, C
+    ("temp_min", "airtmp_min", 1, 1),
+    ("apparent_max", "wchill_max", 1, 1),        # temp. odczuwalna max/min, C
+    ("apparent_min", "wchill_min", 1, 1),
+    ("ground_max", "grdtmp_max", 1, 1),          # temp. gruntu max, C
+    ("pressure_surface", "trpres_point", 0.01, 1),  # cisnienie na wys. stacji, hPa
+    ("cloud_very_low", "cldvlow_aver", 100, 0),  # pietra chmur, %
+    ("cloud_low", "cldlow_aver", 100, 0),
+    ("cloud_mid", "cldmed_aver", 100, 0),
+    ("cloud_high", "cldhigh_aver", 100, 0),
+    ("cloud_base_1", "cldbse01", 1000, 0),       # podstawa chmur o pokryciu >=1%, m
+    ("cloud_base_25", "cldbse25", 1000, 0),
+    ("cloud_base_45", "cldbse45", 1000, 0),
+    ("cloud_base_65", "cldbse65", 1000, 0),
+    ("cloud_base_79", "cldbse79", 1000, 0),
+    ("cloud_top", "cldtop", 1000, 0),            # wierzcholek chmur, m
+    ("fog", "fog_max", 100, 0),                  # mgla, %
+    ("storm", "storm_max", 100, 0),              # burza, %
+    ("lightning", "flash_max", 100, 0),          # wyladowania, %
+    ("precip_type", "pcpttl_type_max", 1, 0),    # typ opadu - surowy kod ICM
+]
+
+# Sensory z wartoscia dla biezacej godziny: (sufiks encji, nazwa, klucz w
+# hourly, jednostka, device_class)
+DETAIL_SENSORS = [
+    ("temperatura", "Temperatura", "temperature_2m", "°C", "temperature"),
+    ("temp_max", "Temperatura max (godz.)", "temp_max", "°C", "temperature"),
+    ("temp_min", "Temperatura min (godz.)", "temp_min", "°C", "temperature"),
+    ("temp_odczuwalna", "Temperatura odczuwalna", "apparent_temperature", "°C", "temperature"),
+    ("punkt_rosy", "Punkt rosy", "dew_point_2m", "°C", "temperature"),
+    ("temp_gruntu_min", "Temperatura gruntu min", "soil_temperature_min", "°C", "temperature"),
+    ("temp_gruntu_max", "Temperatura gruntu max", "ground_max", "°C", "temperature"),
+    ("wilgotnosc", "Wilgotność względna", "relative_humidity_2m", "%", "humidity"),
+    ("cisnienie", "Ciśnienie (poziom morza)", "pressure_msl", "hPa", "atmospheric_pressure"),
+    ("cisnienie_stacji", "Ciśnienie (poziom stacji)", "pressure_surface", "hPa", "atmospheric_pressure"),
+    ("opad", "Opad", "precipitation", "mm/h", "precipitation_intensity"),
+    ("opad_max", "Opad maksymalny", "precipitation_max", "mm/h", "precipitation_intensity"),
+    ("szansa_opadu", "Szansa opadu", "precipitation_probability", "%", None),
+    ("typ_opadu", "Typ opadu (kod ICM)", "precip_type", None, None),
+    ("wiatr", "Wiatr", "wind_speed_10m", "km/h", "wind_speed"),
+    ("porywy", "Porywy wiatru", "wind_gusts_10m", "km/h", "wind_speed"),
+    ("kierunek_wiatru", "Kierunek wiatru", "wind_direction_10m", "°", None),
+    ("zachmurzenie", "Zachmurzenie ogólne", "cloud_cover", "%", None),
+    ("chmury_bardzo_niskie", "Chmury bardzo niskie", "cloud_very_low", "%", None),
+    ("chmury_niskie", "Chmury niskie", "cloud_low", "%", None),
+    ("chmury_srednie", "Chmury średnie", "cloud_mid", "%", None),
+    ("chmury_wysokie", "Chmury wysokie", "cloud_high", "%", None),
+    ("podstawa_chmur", "Podstawa chmur", "cloud_base_1", "m", "distance"),
+    ("wierzcholek_chmur", "Wierzchołek chmur", "cloud_top", "m", "distance"),
+    ("widzialnosc", "Widzialność", "visibility", "m", "distance"),
+    ("mgla", "Mgła", "fog", "%", None),
+    ("burza", "Burza", "storm", "%", None),
+    ("wyladowania", "Wyładowania atmosferyczne", "lightning", "%", None),
+    ("kod_pogody", "Kod pogody (WMO)", "weather_code", None, None),
+]
+
 
 def now_index(series):
     """Indeks godziny prognozy najblizszej chwili obecnej. Bieg modelu startuje
@@ -497,6 +561,38 @@ def push_sensor(embed, series):
                  "Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=20) as r:
         log("sensor.icm_meteogram ->", r.status)
+    if CFG.get("detail_sensors", True):
+        push_detail_sensors(embed, i)
+
+
+def push_detail_sensors(embed, i):
+    """Osobny sensor na kazda wartosc ICM dla biezacej godziny (male stany -
+    pelna historia w recorderze, jednostki i device_class HA)."""
+    h = embed["hourly"]
+    ok = 0
+    for suffix, name, key, unit, dclass in DETAIL_SENSORS:
+        vals = h.get(key)
+        val = vals[i] if vals and i < len(vals) else None
+        attrs = {"friendly_name": f"ICM {name}",
+                 "attribution": "Dane: ICM UW, meteo.pl (nieoficjalne API)",
+                 "now_time": h["time"][i], "model": embed.get("model_id")}
+        if unit:
+            attrs["unit_of_measurement"] = unit
+            attrs["state_class"] = "measurement"
+        if dclass:
+            attrs["device_class"] = dclass
+        body = {"state": "unknown" if val is None else val, "attributes": attrs}
+        req = urllib.request.Request(
+            f"{CORE_API}/states/sensor.icm_{suffix}",
+            data=json.dumps(body).encode(), method="POST",
+            headers={"Authorization": f"Bearer {SUPERVISOR_TOKEN}",
+                     "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=20):
+                ok += 1
+        except Exception as e:
+            log(f"sensor.icm_{suffix} blad:", e)
+    log(f"sensory szczegolowe: {ok}/{len(DETAIL_SENSORS)}")
 
 
 # --------------------------------------------------------------------------- loop + http
@@ -585,6 +681,7 @@ def main():
     CFG.update(lat=lat, lon=lon, name=name, tzname=tzname,
                model=OPTS["model"], minutes=OPTS["update_minutes"],
                publish_sensor=OPTS.get("publish_sensor", True),
+               detail_sensors=OPTS.get("publish_detail_sensors", True),
                coffee_url=OPTS.get("coffee_url", ""), api=OPTS["api_base"])
     if not CFG["name"]:
         try:
