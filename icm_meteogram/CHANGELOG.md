@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1
+
+- **Stan `sensor.icm_meteogram` i wartości `*_now` dotyczą bieżącej godziny**,
+  a nie pierwszej godziny biegu modelu. Przy `um4_120` (biegi tylko 00Z/12Z)
+  sensor pokazywał dotąd temperaturę sprzed nawet kilkunastu godzin. Nowy
+  atrybut `now_time` mówi, której godziny prognozy dotyczy stan.
+
 ## 0.4.0
 
 Dostosowanie do aktualnego frontendu www.meteo.pl/meteogramy (2026-10):

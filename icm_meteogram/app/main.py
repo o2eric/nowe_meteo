@@ -448,12 +448,24 @@ def set_location(lat, lon, name):
 
 # --------------------------------------------------------------------------- HA sensor
 
+def now_index(series):
+    """Indeks godziny prognozy najblizszej chwili obecnej. Bieg modelu startuje
+    nawet kilkanascie godzin wczesniej (um4_120: tylko 00Z/12Z), wiec pierwszy
+    element serii to zwykle przeszlosc."""
+    ts = [p[0] for p in series["temp"]]
+    if not ts:
+        return 0
+    now_ms = time.time() * 1000
+    return min(range(len(ts)), key=lambda i: abs(ts[i] - now_ms))
+
+
 def push_sensor(embed, series):
     if not SUPERVISOR_TOKEN:
         return
     h = embed["hourly"]
+    i = now_index(series)
     body = {
-        "state": h["temperature_2m"][0],
+        "state": h["temperature_2m"][i],
         "attributes": {
             "unit_of_measurement": "°C",
             "friendly_name": ("Meteogram ICM " + (embed.get("name") or "")).strip(),
@@ -470,10 +482,11 @@ def push_sensor(embed, series):
             "pressure": series["pressure"], "dew": series["dew"],
             # biezace wartosci (bez serii - atrybuty musza zmiescic sie
             # w limicie 16 KB recordera HA)
-            "pressure_now": h["pressure_msl"][0],
-            "dew_point_now": h["dew_point_2m"][0],
-            "visibility_now": h["visibility"][0],
-            "cloud_cover_now": h["cloud_cover"][0],
+            "now_time": h["time"][i],
+            "pressure_now": h["pressure_msl"][i],
+            "dew_point_now": h["dew_point_2m"][i],
+            "visibility_now": h["visibility"][i],
+            "cloud_cover_now": h["cloud_cover"][i],
             "model_id": embed.get("model_id"),
         },
     }
