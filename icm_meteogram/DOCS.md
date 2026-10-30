@@ -31,9 +31,25 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `update_minutes` | `360` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `background` | `krajobraz` | Tło nagłówka panelu: `krajobraz` (niebo + krajobraz pory roku w ruchu), `efekty` (niebo z efektami), `niebo` (sam kolor nieba), `brak` (klasyczny wygląd). W panelu można to zmienić dla danej przeglądarki |
+| `view` | `klasyczny` | Szablon panelu: `klasyczny`, `pelny` (meteogram w pasach), `pogoda` (styl iOS/Google). Lista „Widok” w panelu zmienia go dla danej przeglądarki |
 | `coffee_url` | `https://buycoffee.to/o2eric` | Link przycisku „Postaw kawę” w panelu (wsparcie autora); pusty = przycisk ukryty |
 | `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
 | `api_base` | *(puste)* | Adres API ICM; puste = `https://devmgramapi.meteo.pl` |
+
+## Szablony panelu (0.9.0)
+
+- **klasyczny** — dotychczasowy panel: zakładki Temperatura / Szansa opadów / Wiatr / Wszystko / Pełny, tło w ruchu.
+- **pelny** — meteogram ze wszystkimi wartościami ICM w pasach na jednej osi czasu: pogoda (ikony), temperatura
+  z odczuwalną i punktem rosy, przy gruncie (przymrozek), opad wg typu, szansa opadu i burze, wiatr z progami,
+  ciśnienie, przekrój chmur (piętra na wysokości, podstawa, wierzchołek, mgła), widzialność, wilgotność.
+  Każdy pas ma jedną skalę; nazwa, skala i odczyt godziny pod kursorem stoją w lewej kolumnie. Puste pasy
+  się zwijają, pasy można chować, tryb „Zwarty” zmniejsza wysokość.
+- **pogoda** — widok w stylu iOS/Google: blok „teraz” na niebie z krajobrazem pory roku, pasek dni,
+  wykresy wybranego dnia (temperatura z ikonami, szansa opadów, wiatr, chmury piętrami) i kafle
+  szczegółów (odczuwalna, wilgotność, widzialność, ciśnienie, przy gruncie, opady w dniu, mgła, burze,
+  słońce, chmury). Najechanie lub dotknięcie godziny zmienia blok „teraz”, niebo i kafle.
+
+Szablony są też pod adresami `pelny`, `pogoda` i `klasyczny` względem panelu.
 
 ## Tło w ruchu (0.8.0)
 

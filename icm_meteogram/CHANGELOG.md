@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0
+
+- **Szablony panelu** — opcja `view` i lista „Widok” w panelu (zapamiętana w przeglądarce):
+  - `klasyczny` — dotychczasowy panel,
+  - `pelny` — nowy meteogram: wszystkie wartości ICM w pasach na jednej osi czasu, jedna skala
+    na pas, stała lewa kolumna z odczytem godziny pod kursorem (zamiast dymka), przekrój chmur,
+    pasy przy gruncie / widzialność / wilgotność, noc wg wschodu i zachodu słońca, zwijanie
+    pustych pasów, wybór pasów i tryb zwarty,
+  - `pogoda` — widok w stylu iOS/Google: blok „teraz”, pasek dni, wykresy dnia z wartościami
+    nad linią, kafle szczegółów; niebo i krajobraz pory roku zmieniają się z wybraną godziną.
+- Adresy `pelny`, `pogoda`, `klasyczny` otwierają dany szablon bezpośrednio.
+
 ## 0.8.0
 
 - **Tło w ruchu w nagłówku panelu** — scena liczona z prognozy na bieżącą

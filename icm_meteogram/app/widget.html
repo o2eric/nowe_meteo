@@ -1,5 +1,6 @@
 <meta charset="utf-8">
 <title>Meteogram (na podstawie ICM)</title>
+<script>(function(){try{var me="klasyczny",v=localStorage.getItem("icm_meteogram_view");if(v&&v!==me&&/^(klasyczny|pelny|pogoda)$/.test(v)&&!/\/(pelny|pogoda|klasyczny)\/?$/.test(location.pathname))location.replace(v);}catch(e){}})();</script>
 <style>
   :root{
     --bg:#eef1f6; --panel:#ffffff; --panel-2:#f6f8fb;
@@ -185,6 +186,7 @@
         <div><button id="locBtn" class="loc-edit" type="button">&#128205; Zmie&#324; lokalizacj&#281;</button>
           <button id="refreshBtn" class="loc-edit" type="button" title="Pobierz prognoz&#281; teraz i sprawd&#378; po&#322;&#261;czenie z API ICM">&#10227; Od&#347;wie&#380;</button>
           <select id="modelSel" class="loc-edit model-sel" title="Model prognozy" aria-label="Model prognozy"></select>
+          <select id="viewSel" class="loc-edit model-sel" title="Widok panelu (zapamiętany w tej przeglądarce)" aria-label="Widok panelu"><option value="klasyczny">Widok: klasyczny</option><option value="pelny">Widok: pełny</option><option value="pogoda">Widok: pogoda</option></select>
           <select id="bgSel" class="loc-edit model-sel" title="T&#322;o nag&#322;&#243;wka (zapami&#281;tane w tej przegl&#261;darce)" aria-label="T&#322;o nag&#322;&#243;wka"></select></div>
       </div>
       <div class="now-block">
@@ -815,6 +817,7 @@ requestAnimationFrame(()=>{ scroll.scrollLeft=Math.max(0,xAt(nowIdx)-scroll.clie
   var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(draw,250);});
   setInterval(draw,10*60*1000);
 })();
+(function(){var s=document.getElementById('viewSel');s.value='klasyczny';s.addEventListener('change',function(){try{localStorage.setItem('icm_meteogram_view',s.value);}catch(e){}location.href=s.value;});})();
 // --- przycisk kawy ---
 if(DATA.coffee){var _cb=document.getElementById('coffeeBtn');_cb.href=DATA.coffee;_cb.classList.add('show');}
 // --- wybor modelu (0.7.0) ---

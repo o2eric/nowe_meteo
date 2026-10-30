@@ -44,6 +44,14 @@ configuration:
       krajobraz = niebo + krajobraz pory roku, efekty = niebo z efektami,
       niebo = sam kolor nieba bez animacji, brak = klasyczny wygląd.
       W panelu można to zmienić dla danej przeglądarki (lista „Tło”).
+  view:
+    name: Widok panelu
+    description: >-
+      Szablon otwierany w panelu: klasyczny (wykresy z zakładkami i tłem
+      w ruchu), pelny (meteogram ze wszystkimi wartościami ICM w pasach
+      na jednej osi czasu), pogoda (widok w stylu iOS/Google: blok „teraz”,
+      dni, wykresy dnia i kafle szczegółów). Lista „Widok” w panelu zmienia
+      to dla danej przeglądarki.
   coffee_url:
     name: Link „postaw kawę"
     description: >-

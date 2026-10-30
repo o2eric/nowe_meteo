@@ -42,6 +42,13 @@ configuration:
       wind). krajobraz = sky + seasonal landscape, efekty = sky with effects,
       niebo = sky colour only, no animation, brak = classic look. Can be
       overridden per browser in the panel ("Tło" list).
+  view:
+    name: Panel view
+    description: >-
+      Template opened in the panel: klasyczny (tabbed charts with animated
+      header), pelny (meteogram with every ICM value in bands on one time
+      axis), pogoda (iOS/Google-style view: "now" block, days, day charts and
+      detail tiles). The "Widok" list in the panel overrides it per browser.
   coffee_url:
     name: "Buy me a coffee link"
     description: >-
