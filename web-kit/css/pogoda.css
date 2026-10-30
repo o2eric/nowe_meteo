@@ -1,0 +1,73 @@
+/* ICM Meteogram — widok „pogoda” (web-kit z dodatku Home Assistant „Meteogram (na podstawie ICM)”)
+   Dane: © ICM UW, meteo.pl. Projekt nieoficjalny, niepowiązany z ICM UW. */
+/* Uklad: niebo z prognozy jako tlo strony; u gory blok "teraz" (Google) na scenie z krajobrazem (iOS), pasek dni, potem szklane karty: wykresy dnia po lewej, kafle szczegolow po prawej */
+:root{
+  --ink:#ffffff; --ink2:rgba(255,255,255,.82); --muted:rgba(255,255,255,.62);
+  --glass:rgba(12,28,58,.24); --glass-line:rgba(255,255,255,.2); --glass-hi:rgba(255,255,255,.16);
+  --temp:#ffd166; --temp-fill:rgba(255,209,102,.28); --rain:#a9cbff; --rain-fill:rgba(169,203,255,.32);
+  --snow:#d9c9ff; --mix:#ffb8d6; --wind:#86ecd9; --frost:#9fd0ff; --fog:#ffd9a0;
+  --sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--sans);font-size:14px;line-height:1.4;color:var(--ink);background:#2f6bb8}
+#sky{position:fixed;inset:0;z-index:0;transition:background .6s}
+.wrap{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 36px;display:flex;flex-direction:column;gap:14px}
+.glass{background:var(--glass);border:1px solid var(--glass-line);border-radius:22px;-webkit-backdrop-filter:blur(14px) saturate(1.2);backdrop-filter:blur(14px) saturate(1.2)}
+/* blok teraz */
+.hero{position:relative;overflow:hidden;border-radius:26px;min-height:250px;padding:20px 22px 96px}
+.hero-land{position:absolute;left:0;right:0;bottom:0;height:86px;width:100%;display:block}
+.hero-top{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px}
+.loc{font-size:18px;font-weight:600;display:flex;align-items:center;gap:8px}
+.msel{font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.msel option,.msel optgroup{color:#16202e;background:#fff}
+.msel:disabled{opacity:.6;cursor:progress}
+.vsel{font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-left:auto}
+.vsel option{color:#16202e;background:#fff}
+.pill{font-size:12.5px;font-weight:600;border:1px solid var(--glass-line);background:var(--glass-hi);border-radius:999px;padding:5px 12px;color:var(--ink)}
+.hero-main{position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;margin-top:14px}
+.now{display:flex;align-items:center;gap:14px}
+.now svg{width:92px;height:92px;flex:none;filter:drop-shadow(0 6px 14px rgba(0,0,0,.18))}
+.big{font-size:86px;font-weight:300;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.big sup{font-size:26px;font-weight:400;vertical-align:top;position:relative;top:10px;margin-left:2px}
+.stats{display:flex;flex-direction:column;gap:2px;color:var(--ink2);font-size:15px}
+.stats b{color:var(--ink);font-weight:600}
+.side{text-align:right;display:flex;flex-direction:column;gap:2px}
+.side .t1{font-size:26px;font-weight:500}
+.side .t2{font-size:17px;color:var(--ink2)}
+.side .t3{font-size:13px;color:var(--muted)}
+/* dni */
+.days{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(92px,1fr);gap:8px;overflow-x:auto;padding:8px;scrollbar-width:none}
+.day{appearance:none;font:inherit;color:var(--ink);border:1px solid transparent;background:none;border-radius:16px;padding:8px 6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.day:hover{background:var(--glass-hi)}
+.day[aria-pressed="true"]{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.35)}
+.day:focus-visible,.chip:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.day .dn{font-size:16px;font-weight:600}
+.day .dd{font-size:12px;color:var(--muted)}
+.day svg{width:46px;height:46px;margin:2px 0}
+.day .hl{font-size:16px;font-variant-numeric:tabular-nums}
+.day .hl i{font-style:normal;color:var(--muted);margin-left:6px}
+.day .pp{font-size:12px;color:var(--rain);font-weight:600;min-height:16px}
+/* siatka */
+.grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;align-items:start}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.card{padding:14px 16px 12px;min-width:0}
+.card h3{margin:0 0 2px;font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+.card h3 span:last-child{letter-spacing:0;text-transform:none;font-weight:500;color:var(--ink2);font-size:13px}
+.card .sum{font-size:15px;color:var(--ink2);margin:2px 0 6px}
+.card svg.ch{display:block;width:100%;touch-action:pan-y;cursor:pointer}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.tile{padding:13px 14px;display:flex;flex-direction:column;gap:4px;min-height:150px;min-width:0}
+.tile h3{margin:0;font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-size:32px;font-weight:400;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .v small{font-size:16px;color:var(--ink2);margin-left:3px}
+.tile .d{font-size:13px;color:var(--ink2);margin-top:auto}
+.tile svg{display:block;width:100%}
+.wide{grid-column:1/-1}
+.foot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:12.5px;color:var(--ink2);padding:2px 4px}
+.chip{appearance:none;font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--glass-line);background:var(--glass);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:rgba(255,255,255,.28)}
+text{font-family:var(--sans)}
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.big{font-size:70px}.now svg{width:72px;height:72px}.side{text-align:left}.hero{padding-bottom:88px}}
+@media (prefers-reduced-motion:reduce){#sky{transition:none}}

@@ -59,7 +59,7 @@ text{font-family:var(--sans)}
 </style>
 
 <div class="wrap">
-  <header class="top"><div class="hrow"><h1 id="ttl">Meteogram</h1><select id="viewSel" class="vsel" aria-label="Widok"><option value="klasyczny">Widok: klasyczny</option><option value="pelny">Widok: pełny</option><option value="pogoda">Widok: pogoda</option></select></div><div class="sub" id="sub">Pobieram prognozę…</div></header>
+  <header class="top"><div class="hrow"><h1 id="ttl">Meteogram</h1><select id="mdlSel" class="vsel" aria-label="Model prognozy" title="Model prognozy"></select><select id="viewSel" class="vsel" aria-label="Widok"><option value="klasyczny">Widok: klasyczny</option><option value="pelny">Widok: pełny</option><option value="pogoda">Widok: pogoda</option></select></div><div class="sub" id="sub">Pobieram prognozę…</div></header>
 
   <section class="card" aria-label="Meteogram pełny">
     <div class="bar">
@@ -266,6 +266,8 @@ function seg(id,cb,init){const g=document.getElementById(id);g.querySelectorAll(
   b.onclick=()=>{g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));cb(b.dataset.v);build();};});}
 seg('dens',v=>{dens=+v;store.set('dens',dens);},dens);
 let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(build,200);});
+modelSel('sub');
 build();
 }
+function modelSel(errId){const s=document.getElementById('mdlSel'),err=document.getElementById(errId);if(!s)return;if(!Array.isArray(RAW.models)||!RAW.models.length){s.hidden=true;return;}s.innerHTML='';RAW.models.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent='ICM '+m.label+(m.ok?'':' (poza zasięgiem)');o.disabled=!m.ok;s.appendChild(o);});s.value=RAW.model_id;s.onchange=()=>{const v=s.value,old=err.innerHTML;s.disabled=true;err.textContent='Przełączam model i pobieram prognozę…';const fail=m=>{err.textContent='Nie udało się zmienić modelu: '+m;s.value=RAW.model_id;s.disabled=false;setTimeout(()=>{err.innerHTML=old;},9000);};fetch('api/setmodel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:v})}).then(r=>r.json().catch(()=>({ok:false,error:'HTTP '+r.status}))).then(b=>{if(b.ok){err.textContent='Model: '+b.label+' — wczytuję…';setTimeout(()=>location.reload(),600);}else fail(b.error||'nieznany błąd');}).catch(e=>fail(e&&e.message||e));};}
 </script>

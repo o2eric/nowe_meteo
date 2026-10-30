@@ -68,6 +68,7 @@ MANUAL = {"last": 0.0, "result": None}   # reczne odswiezenie (limit 1 / 60 s)
 MANUAL_MIN_GAP = 60
 CFG = {}                         # biezaca konfiguracja (mutowalna)
 BG_TEMPLATES = ("krajobraz", "efekty", "niebo", "brak")   # tlo naglowka panelu (0.8.0)
+INGRESS_PEERS = ("172.30.32.2", "127.0.0.1", "::1")   # Supervisor (ingress) i lokalne testy
 VIEWS = {"klasyczny": "widget.html", "pelny": "view_pelny.html", "pogoda": "view_pogoda.html"}  # szablony panelu (0.9.0)
 OPTS = {}                        # pelne opcje (do zapisu przez Supervisor)
 
@@ -751,6 +752,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Cache-Control", "no-store")
+        if getattr(self, "_cors", False):        # tylko odczyt danych (0.9.2)
+            self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -759,6 +762,7 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         page = path.strip("/")
+        self._cors = path in ("/api/data", "/api/series")
         if path in ("/", "/index.html") or page in VIEWS:
             name = VIEWS.get(page) or VIEWS.get(OPTS.get("view"), "widget.html")
             with open(os.path.join(APP_DIR, name), "rb") as f:
@@ -790,6 +794,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
+        # zmiany (model, lokalizacja, odswiezenie) tylko przez panel HA (ingress),
+        # nie przez opcjonalnie wystawiony port 8099
+        if not self.headers.get("X-Ingress-Path") and self.client_address[0] not in INGRESS_PEERS:
+            return self._send(403, {"ok": False, "error": "zmiany tylko przez panel Home Assistant"})
         if path == "/api/setmodel":
             try:
                 length = int(self.headers.get("Content-Length", 0))

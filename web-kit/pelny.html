@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meteogram — widok pełny</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/pelny.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div class="hrow"><h1 id="ttl">Meteogram</h1><select id="mdlSel" class="vsel" aria-label="Model prognozy" title="Model prognozy"></select><select id="viewSel" class="vsel" aria-label="Widok"><option value="pogoda.html">Widok: pogoda</option><option value="pelny.html">Widok: pełny</option></select></div><div class="sub" id="sub">Pobieram prognozę…</div></header>
+
+  <section class="card" aria-label="Meteogram pełny">
+    <div class="bar">
+      <span class="lab">Pasy</span>
+      <div class="chips" id="chips"></div>
+      <span class="spacer"></span>
+      <div class="seg" id="dens" role="group" aria-label="Gęstość">
+        <button type="button" data-v="1" aria-pressed="true">Zwykły</button>
+        <button type="button" data-v="0.72" aria-pressed="false">Zwarty</button>
+      </div>
+    </div>
+    <div class="chart" style="--left:150px">
+      <svg id="axis" aria-hidden="true"></svg>
+      <div class="scroller" id="scroller"><svg id="plot" role="img" aria-label="Meteogram godzinowy"></svg></div>
+    </div>
+  </section>
+  <div class="sample" id="sample"></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/pelny.js"></script>
+</body>
+</html>

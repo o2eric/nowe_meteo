@@ -51,6 +51,16 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 
 Szablony są też pod adresami `pelny`, `pogoda` i `klasyczny` względem panelu.
 
+## Dane na własnej stronie (0.9.2)
+
+1. W dodatku: **Ustawienia → Sieć** → wpisz port hosta przy `8099/tcp` (np. `8099`) i zapisz.
+2. Dane są pod `http://<adres-HA>:8099/api/data` (tylko odczyt, z nagłówkiem CORS).
+3. Gotowe widoki do wklejenia: katalog `web-kit/` w repo (`pogoda.html`, `pelny.html`,
+   `css/`, `js/`) — w `js/config.js` ustaw `dataUrl`.
+
+Przez ten port nie da się zmienić modelu, lokalizacji ani wymusić odświeżenia (403) —
+to działa tylko z panelu HA.
+
 ## Tło w ruchu (0.8.0)
 
 Nagłówek panelu pokazuje scenę liczoną z prognozy dla bieżącej godziny:

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.2
+
+- **Dane dla własnej strony:** opcjonalny port 8099 (domyślnie wyłączony — włącz w zakładce
+  „Sieć” dodatku). `GET /api/data` i `/api/series` mają nagłówek CORS, więc strona w sieci
+  domowej może je czytać. Zmiany (`POST`: model, lokalizacja, odświeżenie) przyjmowane są
+  tylko z panelu HA (ingress) — przez wystawiony port zwracają 403.
+- Zestaw `web-kit/` w repo: CSS i JS widoków „pogoda” i „pełny” do osadzenia na własnej stronie.
+
+## 0.9.1
+
+- Wybór modelu (UM 4 km 60 h / 120 h, GFS 240 h) także w widokach `pogoda` i `pelny` — lista obok „Widok”.
+
 ## 0.9.0
 
 - **Szablony panelu** — opcja `view` i lista „Widok” w panelu (zapamiętana w przeglądarce):

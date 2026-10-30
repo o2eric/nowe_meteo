@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pogoda</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/pogoda.css">
+</head>
+<body>
+<div id="sky" aria-hidden="true"></div>
+<div class="wrap">
+  <section class="hero glass" aria-label="Pogoda w wybranej godzinie">
+    <div class="hero-top"><div class="loc"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3z" fill="#fff"></path></svg><span id="locName">Meteogram</span></div>
+      <span class="pill" id="when">Teraz</span><select id="mdlSel" class="pill msel" aria-label="Model prognozy" title="Model prognozy"></select><select id="viewSel" class="pill vsel" aria-label="Widok"><option value="pogoda.html">Widok: pogoda</option><option value="pelny.html">Widok: pełny</option></select></div>
+    <div class="hero-main">
+      <div class="now"><span id="nowIco"></span><div class="big" id="nowT">–<sup>°C</sup></div>
+        <div class="stats" id="nowStats"></div></div>
+      <div class="side"><div class="t1">Pogoda</div><div class="t2" id="sideDay"></div><div class="t2" id="sideCond"></div><div class="t3" id="sideRange"></div></div>
+    </div>
+    <svg class="hero-land" id="land" viewBox="0 0 1000 86" preserveAspectRatio="none" aria-hidden="true"></svg>
+  </section>
+
+  <nav class="days glass" id="days" aria-label="Dzień prognozy"></nav>
+
+  <div class="grid">
+    <div class="col">
+      <section class="card glass"><h3><span>Temperatura</span><span id="tSum"></span></h3><svg class="ch" id="cT"></svg></section>
+      <section class="card glass"><h3><span>Szansa opadów</span><span id="pSum"></span></h3><svg class="ch" id="cP"></svg></section>
+      <section class="card glass"><h3><span>Wiatr</span><span id="wSum"></span></h3><svg class="ch" id="cW"></svg></section>
+      <section class="card glass"><h3><span>Chmury piętrami</span><span id="cSum"></span></h3><svg class="ch" id="cC"></svg></section>
+    </div>
+    <div class="col"><div class="tiles" id="tiles"></div></div>
+  </div>
+
+  <div class="foot"><span id="note"></span></div>
+</div>
+<script src="js/config.js"></script>
+<script src="js/pogoda.js"></script>
+</body>
+</html>
