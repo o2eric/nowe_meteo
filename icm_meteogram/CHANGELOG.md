@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.7.0
+
+- **Widok „Pełny”** w panelu — wszystkie wartości ICM w siedmiu pasach:
+  temperatura (min/max w godzinie, odczuwalna z zakresem, punkt rosy,
+  temperatura gruntu min–max), opad średni i maksymalny w kolorze typu
+  (deszcz / śnieg / deszcz ze śniegiem) z wilgotnością, szansa opadu
+  z burzami (kolor wg natężenia wyładowań), ciśnienie, wiatr z porywami
+  i kierunkiem, piętra chmur z mgłą, podstawa i wierzchołek chmur
+  z widzialnością (skale nieliniowe). Dymek pokazuje komplet danych dla godziny.
+- **Wybór modelu w panelu** (UM 4 km 60 h / 120 h, GFS 240 h) — zapis do
+  opcji add-onu i natychmiastowe pobranie; model poza zasięgiem jest
+  zablokowany. Endpoint `POST /api/setmodel`.
+- **Typ opadu** odczytywany wg kodów frontendu meteo.pl (1 deszcz, 2 śnieg,
+  3 deszcz ze śniegiem): `sensor.icm_typ_opadu` pokazuje tekst, kod pogody
+  rozróżnia śnieg i deszcz ze śniegiem (WMO 68).
+- **Poprawka: wyładowania** (`flash_max`) to wskaźnik natężenia (progi strony
+  10 / 30), a nie ułamek — `sensor.icm_wyladowania` bez mnożenia ×100 i bez „%”.
+- **Burza** od `storm > 0,01` lub wyładowań > 0 (jak na meteo.pl; wcześniej
+  od 0,5).
+- **NaN w odpowiedzi API** traktowane jak brak danych (wcześniej mogło
+  przerwać całe pobranie).
+- Panel deklaruje `charset=utf-8`; nagłówek pokazuje aktywny model.
+
 ## 0.6.2
 
 - Link wsparcia autora: [buycoffee.to/o2eric](https://buycoffee.to/o2eric) — w README, na GitHubie

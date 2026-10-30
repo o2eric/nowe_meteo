@@ -15,6 +15,7 @@ configuration:
     name: Forecast model
     description: >-
       um4_60 (60 h, recommended), um4_120 (120 h), gfs (experimental, 240 h).
+      Can also be switched in the panel (header drop-down).
   update_minutes:
     name: Refresh interval (minutes)
     description: >-

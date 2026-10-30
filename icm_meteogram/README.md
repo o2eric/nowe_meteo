@@ -3,7 +3,10 @@
 Interaktywny meteogram godzinowy z modelu **UM 4 km ICM meteo.pl** — panel
 w bocznym menu + `sensor.icm_meteogram` z seriami prognozy.
 
-- zakładki: Temperatura / Szansa opadów / Wiatr,
+- zakładki: Temperatura / Szansa opadów / Wiatr / Wszystko / **Pełny**
+  (wszystkie wartości ICM: ciśnienie, chmury piętrami, podstawa chmur,
+  widzialność, mgła, burze, typ opadu…),
+- wybór modelu prognozy (UM 4 km 60 h / 120 h, GFS 240 h) w panelu,
 - najazd = wartości dla danej godziny, pasek dni, znacznik „teraz",
 - lokalizacja z opcji add-onu albo automatycznie z Home Assistant,
 - nieoficjalne API meteo.pl — działa tylko z polskich IP.

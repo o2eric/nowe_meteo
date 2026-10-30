@@ -16,6 +16,7 @@ configuration:
     name: Model prognozy
     description: >-
       um4_60 (60 h, zalecany), um4_120 (120 h), gfs (eksperymentalnie, 240 h).
+      Model można też zmienić w panelu (lista w nagłówku).
   update_minutes:
     name: Odświeżanie (minuty)
     description: >-

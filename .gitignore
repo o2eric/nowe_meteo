@@ -3,3 +3,5 @@ EMAIL_do_ICM.md
 
 # robocza korespondencja z ICM (dane osobowe, nie publikowac)
 docs/
+__pycache__/
+*.pyc

@@ -6,8 +6,14 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 
 1. **Panel w bocznym menu** (ingress) — interaktywny meteogram w stylu
    godzinowego widgetu pogodowego: zakładki *Temperatura / Szansa opadów /
-   Wiatr*, najazd kursorem/palcem pokazuje wartości dla konkretnej godziny,
-   pasek dni, znacznik „teraz", motyw jasny/ciemny.
+   Wiatr / Wszystko / Pełny*, najazd kursorem/palcem pokazuje wartości dla
+   konkretnej godziny, pasek dni, znacznik „teraz", motyw jasny/ciemny.
+   Widok **Pełny** pokazuje wszystkie wartości ICM w pasach: temperatury
+   (z min/max, odczuwalną, punktem rosy i gruntem), opad z typem
+   (deszcz / śnieg / deszcz ze śniegiem) i wilgotność, szansę opadu
+   z burzami, ciśnienie, wiatr z porywami i kierunkiem, piętra chmur z mgłą
+   oraz podstawę i wierzchołek chmur z widzialnością. W nagłówku można
+   przełączyć **model prognozy** (zapisuje się w opcjach add-onu).
 2. **Sensor `sensor.icm_meteogram`** — stan = aktualna temperatura, a w
    atrybutach pełne serie prognozy (`temp`, `apparent`, `prob`, `precip`,
    `wind`, `gust`, `dir`, `humid`, `pressure` [hPa], `dew` [punkt rosy °C])
@@ -21,7 +27,7 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 |---|---|---|
 | `location_name` | *(puste)* | Nazwa pokazywana w panelu; puste = nazwa z HA |
 | `latitude` / `longitude` | *(puste)* | Puste = współrzędne domu z HA. Ucinane do 4 miejsc |
-| `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Poza obszarem UM add-on sam przechodzi na `gfs` |
+| `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Można też przełączać w panelu. Poza obszarem UM add-on sam przechodzi na `gfs` |
 | `update_minutes` | `360` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
 | `coffee_url` | `https://buycoffee.to/o2eric` | Link przycisku „Postaw kawę” w panelu (wsparcie autora); pusty = przycisk ukryty |
@@ -46,6 +52,8 @@ Pod portem ingress (lub po wystawieniu portu 8099):
 - `GET /api/series` — serie `[[ts_ms, val], ...]` pod ApexCharts (także
   `precip_max`, `visibility`, `cloud`, `ground_min`, których nie ma w sensorze),
 - `GET /api/health` — status ostatniego odświeżenia,
+- `POST /api/setmodel` — zmień model `{"model": "um4_60" | "um4_120" | "gfs"}`;
+  zapisuje opcję i od razu pobiera prognozę,
 - `POST /api/refresh` — pobierz prognozę teraz; działa też jako test łączności
   z API ICM (odpowiedź `{"ok": true, ...}` albo HTTP 502 z opisem problemu).
   Limit: jedno pobranie na 60 s.

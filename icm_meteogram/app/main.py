@@ -10,6 +10,7 @@ Pobiera prognoze godzinowa z nieoficjalnego API meteogramow ICM meteo.pl
   GET  /api/geocode?q=... -> wyszukiwarka lokalizacji (geokoder meteo.pl)
   POST /api/setloc  -> ustaw lokalizacje {lat, lon, name}; zapisuje do opcji
   POST /api/refresh -> reczne odswiezenie = test lacznosci z API ICM
+  POST /api/setmodel -> zmien model {model: um4_60|um4_120|gfs}; zapisuje do opcji
 
 Przepis na API ICM (jak frontend www.meteo.pl/meteogramy, stan 2026-10):
   0) POST <api>/available_models/  body: {"lat": .., "lon": ..}
@@ -269,18 +270,46 @@ def get_json(url, headers=None, timeout=40):
         return json.loads(r.read().decode())
 
 
-def wcode(cldt, prob, prec, storm, fog, temp):
-    if storm >= 0.5:
+# Typ opadu ICM (pcpttl_type_max) - kody z frontendu www.meteo.pl:
+# 1 = deszcz, 2 = snieg, 3 = deszcz ze sniegiem, 0 = brak opadu.
+PRECIP_TYPES = {0: "brak", 1: "deszcz", 2: "śnieg", 3: "deszcz ze śniegiem"}
+
+
+def wcode(cldt, prob, prec, storm, fog, temp, ptype=None, flash=None):
+    # meteo.pl zaznacza burze przy storm > 0; wyladowania (flash) to wskaznik
+    # natezenia (progi strony 10 / 30), nie ulamek
+    if storm > 0.01 or (flash or 0) > 0:
         return 95
     if fog >= 0.5:
         return 45
     if prob >= 40 and prec > 0.05:
-        return 71 if temp < 0 else 61      # jak meteo.pl: opad przy t<0 = snieg
+        if ptype == 2:
+            return 71                      # snieg
+        if ptype == 3:
+            return 68                      # deszcz ze sniegiem
+        if ptype == 1:
+            return 61
+        return 71 if temp < 0 else 61      # brak typu: jak meteo.pl, t<0 = snieg
     if cldt >= 0.8:
         return 3
     if cldt >= 0.4:
         return 2
     return 0
+
+
+MODELS = {"um4_60": "UM 4 km · 60 h", "um4_120": "UM 4 km · 120 h",
+          "gfs": "GFS · 240 h"}
+
+
+def model_choices():
+    """Lista modeli dla panelu: dostepnosc wg ostatniego /available_models/."""
+    avail = STATE.get("models_avail")
+    out = []
+    for mid, label in MODELS.items():
+        fam = "um4" if mid.startswith("um4") else mid
+        out.append({"id": mid, "label": label,
+                    "ok": True if avail is None else fam in avail})
+    return out
 
 
 def pick_model(api, lat, lon, model):
@@ -293,6 +322,7 @@ def pick_model(api, lat, lon, model):
         return model
     if not models:
         return model
+    STATE["models_avail"] = list(models)
     if model.startswith("um4") and "um4" not in models and "gfs" in models:
         log(f"punkt {lat},{lon} poza obszarem UM ({models}) -> gfs")
         return "gfs"
@@ -325,7 +355,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
         node = data.get(field)
         if not node or "data" not in node:
             return [default] * n
-        return [default if (v is None or v < MISSING) else v * scale
+        return [default if (v is None or v != v or v < MISSING) else v * scale
                 for v in node["data"]]
 
     def opt(field, scale=1.0, nd=1):
@@ -333,7 +363,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
         node = data.get(field)
         if not node or "data" not in node:
             return [None] * n
-        return [None if (v is None or v < MISSING)
+        return [None if (v is None or v != v or v < MISSING)
                 else (int(round(v * scale)) if nd == 0 else round(v * scale, nd))
                 for v in node["data"]]
 
@@ -354,8 +384,6 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
     cldt = g("cldtot_aver", default=0.5)
     storm = g("storm_max")
     fog = g("fog_max")
-    codes = [wcode(cldt[i], prob[i], prec[i], storm[i], fog[i], temp[i])
-             for i in range(n)]
     # nowe w 0.4.0 (jednostki API: Pa, Celsius, kg/m2 = mm, m, ulamek 0-1)
     press = opt("slpres_point", 0.01)          # cisnienie zredukowane, hPa
     dew = opt("dwptmp_point")                  # punkt rosy, C
@@ -364,11 +392,17 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
     cloud = opt("cldtot_aver", 100, 0)         # zachmurzenie ogolne, %
     grdmin = opt("grdtmp_min")                 # temp. gruntu min (przymrozki)
     extra = {k: opt(f, sc, nd) for k, f, sc, nd in EXTRA_FIELDS}
+    ptype = extra["precip_type"]
+    flash = extra["lightning"]
+    extra["precip_type_text"] = [PRECIP_TYPES.get(v, None) if v is not None else None
+                                 for v in ptype]
+    codes = [wcode(cldt[i], prob[i], prec[i], storm[i], fog[i], temp[i],
+                   ptype[i], flash[i]) for i in range(n)]
 
     days = {}
     for i, t in enumerate(times):
         days.setdefault(t[:10], []).append(i)
-    sev = {95: 5, 71: 4, 61: 4, 45: 3, 3: 2, 2: 1, 0: 0}
+    sev = {95: 5, 71: 4, 68: 4, 61: 4, 45: 3, 3: 2, 2: 1, 0: 0}
     dtime, dmax, dmin, dcode = [], [], [], []
     for day in sorted(days):
         idx = days[day]
@@ -382,7 +416,7 @@ def fetch_icm(lat, lon, model, tzname, name, api=DEFAULT_API):
     now_iso = datetime.now(tz).isoformat(timespec="seconds")
     embed = {
         "lat": r2(lat), "lon": r2(lon), "name": name,
-        "model": "UM 4 km · ICM" if model.startswith("um4") else model.upper(),
+        "model": MODELS.get(model, model.upper()),
         "model_id": model, "model_requested": requested,
         "node": f"{point.get('row', '?')}/{point.get('col', '?')}",
         "tz": tzname, "fstart": resp.get("fstart"), "updated": now_iso,
@@ -454,6 +488,30 @@ def set_location(lat, lon, name):
     return embed, persisted
 
 
+def set_model(model):
+    """Zmien model z panelu: sprawdz dostepnosc, pobierz od razu, zapisz opcje."""
+    if model not in MODELS:
+        raise ValueError(f"nieznany model: {model}")
+    avail = STATE.get("models_avail")
+    fam = "um4" if model.startswith("um4") else model
+    if avail is not None and fam not in avail:
+        raise ValueError("Model UM nie obejmuje tej lokalizacji - dostępny jest tylko GFS.")
+    old = CFG["model"]
+    CFG["model"] = OPTS["model"] = model
+    try:
+        embed = do_fetch()
+    except Exception:
+        CFG["model"] = OPTS["model"] = old
+        raise
+    persisted = False
+    try:
+        persisted = persist_options()
+    except Exception as e:
+        log("nie zapisano opcji (dziala tymczasowo):", e)
+    REFRESH.set()
+    return embed, persisted
+
+
 # --------------------------------------------------------------------------- HA sensor
 
 # Pozostale pola odpowiedzi ICM (0.5.0): klucz, pole API, mnoznik, miejsca.
@@ -478,8 +536,8 @@ EXTRA_FIELDS = [
     ("cloud_top", "cldtop", 1000, 0),            # wierzcholek chmur, m
     ("fog", "fog_max", 100, 0),                  # mgla, %
     ("storm", "storm_max", 100, 0),              # burza, %
-    ("lightning", "flash_max", 100, 0),          # wyladowania, %
-    ("precip_type", "pcpttl_type_max", 1, 0),    # typ opadu - surowy kod ICM
+    ("lightning", "flash_max", 1, 1),            # wyladowania - wskaznik ICM (0 / <10 / <30 / >=30)
+    ("precip_type", "pcpttl_type_max", 1, 0),    # typ opadu: 1 deszcz, 2 snieg, 3 mieszany
 ]
 
 # Sensory z wartoscia dla biezacej godziny: (sufiks encji, nazwa, klucz w
@@ -498,7 +556,7 @@ DETAIL_SENSORS = [
     ("opad", "Opad", "precipitation", "mm/h", "precipitation_intensity"),
     ("opad_max", "Opad maksymalny", "precipitation_max", "mm/h", "precipitation_intensity"),
     ("szansa_opadu", "Szansa opadu", "precipitation_probability", "%", None),
-    ("typ_opadu", "Typ opadu (kod ICM)", "precip_type", None, None),
+    ("typ_opadu", "Typ opadu", "precip_type_text", None, None),
     ("wiatr", "Wiatr", "wind_speed_10m", "km/h", "wind_speed"),
     ("porywy", "Porywy wiatru", "wind_gusts_10m", "km/h", "wind_speed"),
     ("kierunek_wiatru", "Kierunek wiatru", "wind_direction_10m", "°", None),
@@ -512,7 +570,7 @@ DETAIL_SENSORS = [
     ("widzialnosc", "Widzialność", "visibility", "m", "distance"),
     ("mgla", "Mgła", "fog", "%", None),
     ("burza", "Burza", "storm", "%", None),
-    ("wyladowania", "Wyładowania atmosferyczne", "lightning", "%", None),
+    ("wyladowania", "Wyładowania (wskaźnik ICM)", "lightning", None, None),
     ("kod_pogody", "Kod pogody (WMO)", "weather_code", None, None),
 ]
 
@@ -707,7 +765,8 @@ class Handler(BaseHTTPRequestHandler):
             embed, series, err = STATE["embed"], STATE["series"], STATE["error"]
         if path == "/api/data":
             if embed:
-                return self._send(200, {**embed, "coffee": CFG.get("coffee_url", "")})
+                return self._send(200, {**embed, "coffee": CFG.get("coffee_url", ""),
+                                        "models": model_choices()})
             return self._send(503, {"error": err or "jeszcze brak danych"})
         if path == "/api/series":
             if series:
@@ -721,6 +780,19 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
+        if path == "/api/setmodel":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length) or b"{}")
+                embed, persisted = set_model(str(body.get("model", "")))
+                return self._send(200, {"ok": True, "model": embed.get("model_id"),
+                                        "label": embed.get("model"),
+                                        "persisted": persisted})
+            except ValueError as e:
+                return self._send(400, {"ok": False, "error": str(e)})
+            except Exception as e:
+                kind, msg = describe_error(e)
+                return self._send(502, {"ok": False, "kind": kind, "error": msg})
         if path == "/api/refresh":
             res = manual_refresh()
             return self._send(200 if res.get("ok") else 502, res)
