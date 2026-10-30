@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0
+
+- **Tło w ruchu w nagłówku panelu** — scena liczona z prognozy na bieżącą
+  godzinę: pora dnia (wschód/zachód słońca ze współrzędnych), pora roku
+  (krajobraz: kwiaty, zieleń, kolorowe liście, śnieg przy gruncie ≤ 0 °C),
+  chmury z zachmurzenia i wiatru, deszcz / śnieg / deszcz ze śniegiem wg typu
+  opadu ICM, mgła, błyski burzy, smugi silnego wiatru, gwiazdy i świetliki nocą.
+- Nowa opcja `background`: `krajobraz` (domyślnie), `efekty`, `niebo`, `brak`
+  (klasyczny wygląd). Lista „Tło” w panelu nadpisuje ją w danej przeglądarce.
+- Animacje respektują systemowe „ogranicz ruch”; scena odświeża się co 10 min.
+
 ## 0.7.0
 
 - **Widok „Pełny”** w panelu — wszystkie wartości ICM w siedmiu pasach:

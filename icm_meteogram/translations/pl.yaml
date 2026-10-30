@@ -36,6 +36,14 @@ configuration:
       Osobny sensor sensor.icm_* na każdą wartość ICM dla bieżącej godziny
       (ciśnienie, punkt rosy, piętra chmur, podstawa chmur, mgła, burza itd.)
       — z historią i wykresami w HA. Wymaga włączonego „Publikuj sensor".
+  background:
+    name: Tło nagłówka
+    description: >-
+      Scena w ruchu za nagłówkiem panelu, liczona z prognozy na bieżącą
+      godzinę (pora dnia, pora roku, chmury, opad, mgła, burza, wiatr).
+      krajobraz = niebo + krajobraz pory roku, efekty = niebo z efektami,
+      niebo = sam kolor nieba bez animacji, brak = klasyczny wygląd.
+      W panelu można to zmienić dla danej przeglądarki (lista „Tło”).
   coffee_url:
     name: Link „postaw kawę"
     description: >-

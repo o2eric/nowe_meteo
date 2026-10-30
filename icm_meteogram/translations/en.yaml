@@ -34,6 +34,14 @@ configuration:
       One sensor.icm_* entity per ICM value for the current hour (pressure,
       dew point, cloud layers, cloud base, fog, storm, ...) with HA history.
       Requires "Publish sensor".
+  background:
+    name: Header background
+    description: >-
+      Animated scene behind the panel header, driven by the forecast for the
+      current hour (time of day, season, clouds, precipitation, fog, storm,
+      wind). krajobraz = sky + seasonal landscape, efekty = sky with effects,
+      niebo = sky colour only, no animation, brak = classic look. Can be
+      overridden per browser in the panel ("Tło" list).
   coffee_url:
     name: "Buy me a coffee link"
     description: >-

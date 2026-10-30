@@ -67,6 +67,7 @@ REFRESH = threading.Event()      # wybudza petle po zmianie lokalizacji / reczny
 MANUAL = {"last": 0.0, "result": None}   # reczne odswiezenie (limit 1 / 60 s)
 MANUAL_MIN_GAP = 60
 CFG = {}                         # biezaca konfiguracja (mutowalna)
+BG_TEMPLATES = ("krajobraz", "efekty", "niebo", "brak")   # tlo naglowka panelu (0.8.0)
 OPTS = {}                        # pelne opcje (do zapisu przez Supervisor)
 
 
@@ -92,7 +93,7 @@ def load_options():
         "ICM_LAT": ("latitude", float), "ICM_LON": ("longitude", float),
         "ICM_NAME": ("location_name", str), "ICM_MODEL": ("model", str),
         "ICM_MINUTES": ("update_minutes", int), "ICM_PORT": ("port", int),
-        "ICM_COFFEE": ("coffee_url", str), "ICM_API": ("api_base", str),
+        "ICM_COFFEE": ("coffee_url", str), "ICM_BG": ("background", str), "ICM_API": ("api_base", str),
     }
     for env, (key, cast) in env_map.items():
         if os.environ.get(env):
@@ -103,6 +104,8 @@ def load_options():
     opts.setdefault("publish_sensor", True)
     opts.setdefault("coffee_url", "https://buycoffee.to/o2eric")
     opts.setdefault("publish_detail_sensors", True)
+    if opts.get("background") not in BG_TEMPLATES:
+        opts["background"] = "krajobraz"
     opts.setdefault("port", 8099)
     opts["api_base"] = ((opts.get("api_base") or "").strip().rstrip("/")
                         or DEFAULT_API)
@@ -766,7 +769,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/data":
             if embed:
                 return self._send(200, {**embed, "coffee": CFG.get("coffee_url", ""),
-                                        "models": model_choices()})
+                                        "models": model_choices(),
+                                        "bg": OPTS.get("background", "krajobraz")})
             return self._send(503, {"error": err or "jeszcze brak danych"})
         if path == "/api/series":
             if series:

@@ -30,9 +30,29 @@ i w aplikacji Meteo ICM) i udostępnia ją na dwa sposoby:
 | `model` | `um4_60` | `um4_60` (60 h), `um4_120` (120 h), `gfs` (eksperymentalnie). Można też przełączać w panelu. Poza obszarem UM add-on sam przechodzi na `gfs` |
 | `update_minutes` | `360` | Interwał pobierania prognozy (10–720 min); sensory przeliczają się co pełną godzinę |
 | `publish_sensor` | `true` | Czy tworzyć `sensor.icm_meteogram` |
+| `background` | `krajobraz` | Tło nagłówka panelu: `krajobraz` (niebo + krajobraz pory roku w ruchu), `efekty` (niebo z efektami), `niebo` (sam kolor nieba), `brak` (klasyczny wygląd). W panelu można to zmienić dla danej przeglądarki |
 | `coffee_url` | `https://buycoffee.to/o2eric` | Link przycisku „Postaw kawę” w panelu (wsparcie autora); pusty = przycisk ukryty |
 | `publish_detail_sensors` | `true` | Osobne sensory `sensor.icm_*` z wartością dla bieżącej godziny |
 | `api_base` | *(puste)* | Adres API ICM; puste = `https://devmgramapi.meteo.pl` |
+
+## Tło w ruchu (0.8.0)
+
+Nagłówek panelu pokazuje scenę liczoną z prognozy dla bieżącej godziny:
+
+- **pora dnia** — świt i zmierzch to ±45 min od wschodu/zachodu słońca wyliczonego
+  ze współrzędnych; słońce idzie po łuku, nocą księżyc, a przy zachmurzeniu < 50% gwiazdy;
+- **pora roku** (z daty) — krajobraz: wiosną drzewa w kwiatach i płatki, latem pyłki
+  i świetliki nocą, jesienią kolorowe korony i liście niesione wiatrem, zimą nagie
+  drzewa, a przy gruncie ≤ 0 °C śnieżna pokrywa i szron;
+- **chmury** — liczba z zachmurzenia ogólnego, prędkość z wiatru; ≥ 85% = szare niebo;
+- **opad** — typ z ICM (deszcz / śnieg / deszcz ze śniegiem), gęstość z mm/h,
+  pochylenie z wiatru; < 0,5 mm/h = mżawka;
+- **mgła** ≥ 15% = pasma mgły, ≥ 50% = mglisty kolor nieba;
+- **burza** (kod pogody 95: burza > 0,01 lub wyładowania > 0) = błyski;
+- **silny wiatr** ≥ 35 km/h lub porywy ≥ 55 km/h = smugi wiatru.
+
+Lista „Tło” w nagłówku zmienia szablon tylko w tej przeglądarce (np. `brak`
+na słabym tablecie). Przy systemowym ustawieniu „ogranicz ruch” animacje stoją.
 
 ## Zmiana lokalizacji
 
